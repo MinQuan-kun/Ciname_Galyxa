@@ -1,7 +1,7 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Mì Tôm Cinema",
+  title: "Ciname Galyxa",
   description: "Rạp chiếu phim bất ổn nhất hệ mặt trời",
 };
 

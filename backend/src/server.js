@@ -8,7 +8,7 @@ import { connectDB } from "./config/db.js";
 // Import Routes
 import movieRoutes from './routes/movieRoutes.js';
 import showtimeRoutes from './routes/ShowtimeRoutes.js';
-// Sau này import thêm userRoutes, bookingRoutes...
+import authRoutes from './routes/authRoutes.js';
 
 dotenv.config();
 
@@ -22,9 +22,7 @@ connectDB();
 // Middleware (Bộ lọc)
 app.use(
     cors({
-        origin: process.env.NODE_ENV === "production"
-            ? "*"
-            : "http://localhost:5173", // URL của Frontend Vite
+        origin: process.env.FRONTEND_URL || "http://localhost:3000", 
         credentials: true
     })
 );
@@ -33,6 +31,7 @@ app.use(express.json()); // Để đọc được JSON từ body request
 app.use(cookieParser());
 
 // Routing (Định tuyến)
+app.use('/api/auth', authRoutes);
 app.use('/api/movies', movieRoutes);
 app.use('/api/showtimes', showtimeRoutes);
 
@@ -43,6 +42,6 @@ app.get('/', (req, res) => {
 
 // Chạy server
 app.listen(PORT, () => {
-    console.log(`🏃 Server đang chạy tại http://localhost:${PORT}`);
+    console.log(` Server đang chạy tại http://localhost:${PORT}`);
 });
 
