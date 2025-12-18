@@ -1,31 +1,65 @@
 import React from 'react';
+import { FaStar, FaTicketAlt } from 'react-icons/fa';
 
 const MovieCard = ({ movie }) => {
+  // Xử lý genre: Đảm bảo nó luôn là mảng để map ra các tag
+  const genres = Array.isArray(movie.genre) 
+    ? movie.genre 
+    : movie.genre.split(',').map(g => g.trim());
+
   return (
-    <div className="bg-gray-800 rounded-lg overflow-hidden shadow-lg transform hover:scale-105 transition duration-300 group cursor-pointer">
-      {/* Poster Ảnh */}
-      <div className="relative overflow-hidden aspect-[2/3]">
+    <div className="group relative bg-gray-900 rounded-xl overflow-hidden shadow-xl border border-gray-800 hover:border-red-600/50 transition-all duration-300 hover:shadow-red-900/20 hover:-translate-y-2">
+      
+      {/* 1. Phần Ảnh Poster */}
+      <div className="relative aspect-[2/3] overflow-hidden">
         <img 
           src={movie.poster} 
           alt={movie.title} 
-          className="w-full h-full object-cover group-hover:opacity-80 transition"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
-        {/* Nút đặt vé hiện lên khi hover */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300 bg-black/40">
-           <button className="bg-red-600 text-white font-bold py-2 px-6 rounded-full shadow-lg hover:bg-red-700 cursor-pointer">
-             Mua Vé
+        
+        {/* Overlay đen mờ khi hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+
+        {/* Nút Mua Vé hiện lên giữa ảnh */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100">
+           <button className="flex items-center gap-2 bg-red-600 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-red-700 transform hover:scale-105 transition cursor-pointer">
+             <FaTicketAlt /> Mua Vé
            </button>
+        </div>
+
+        {/* Rating nổi ở góc */}
+        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md flex items-center gap-1 border border-yellow-500/30">
+            <FaStar className="text-yellow-400 text-xs" />
+            <span className="text-white text-xs font-bold">{movie.rating || 0}</span>
         </div>
       </div>
 
-      {/* Thông tin phim */}
+      {/* 2. Phần Thông Tin */}
       <div className="p-4">
-        <h3 className="text-white text-lg font-bold truncate">{movie.title}</h3>
-        <p className="text-gray-400 text-sm mt-1">{movie.genre}</p>
-        <div className="flex justify-between items-center mt-3">
-            <span className="text-yellow-400 font-bold text-sm">★ {movie.rating}</span>
-            <span className="text-gray-300 text-xs bg-gray-700 px-2 py-1 rounded">
+        <h3 className="text-white text-lg font-bold truncate mb-2 group-hover:text-red-500 transition-colors">
+            {movie.title}
+        </h3>
+        
+        {/* Container chứa các Tags (Thể loại) */}
+        <div className="flex flex-wrap gap-2 mb-3">
+            {genres.map((genre, index) => (
+                <span 
+                    key={index} 
+                    className="text-[10px] font-medium uppercase tracking-wider text-gray-300 bg-gray-800 px-2 py-1 rounded-md border border-gray-700 hover:border-gray-500 hover:text-white transition cursor-default"
+                >
+                    {genre}
+                </span>
+            ))}
+        </div>
+
+        {/* Thời lượng & Ngày */}
+        <div className="flex justify-between items-center border-t border-gray-800 pt-3 mt-auto">
+            <span className="text-gray-400 text-xs">
                 {movie.duration} phút
+            </span>
+            <span className="text-red-500 font-semibold text-xs border border-red-500/30 px-2 py-1 rounded">
+                Đang Chiếu
             </span>
         </div>
       </div>

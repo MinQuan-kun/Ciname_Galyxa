@@ -5,7 +5,6 @@ import cookieParser from 'cookie-parser';
 
 // Import kết nối DB
 import { connectDB } from "./config/db.js";
-
 // Import Routes
 import movieRoutes from './routes/movieRoutes.js';
 import showtimeRoutes from './routes/ShowtimeRoutes.js';
@@ -21,7 +20,15 @@ const PORT = process.env.PORT || 5001;
 connectDB();
 
 // Middleware (Bộ lọc)
-app.use(cors({ origin: "http://localhost:5173", credentials: true })); // Cho phép Frontend gọi API
+app.use(
+    cors({
+        origin: process.env.NODE_ENV === "production"
+            ? "*"
+            : "http://localhost:5173", // URL của Frontend Vite
+        credentials: true
+    })
+);
+
 app.use(express.json()); // Để đọc được JSON từ body request
 app.use(cookieParser());
 
@@ -31,10 +38,11 @@ app.use('/api/showtimes', showtimeRoutes);
 
 // Route mặc định
 app.get('/', (req, res) => {
-  res.send('API Rạp Chiếu Phim Bất Ổn đang chạy... 🚀');
+    res.send('API Rạp Chiếu Phim Bất Ổn đang chạy... 🚀');
 });
 
 // Chạy server
 app.listen(PORT, () => {
-  console.log(`🏃 Server đang chạy tại http://localhost:${PORT}`);
+    console.log(`🏃 Server đang chạy tại http://localhost:${PORT}`);
 });
+

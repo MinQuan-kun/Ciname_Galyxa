@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-gray-950 text-white font-sans;
+  }
+}
+
+
+/* --- 1. Animation Custom (Chibi & Bông tuyết) --- */
+@keyframes chibiRun {
+    0% { left: -50px; }
+    100% { left: 100%; }
+}
+
+.animate-chibi-run {
+    position: absolute;
+    bottom: -5px; /* Điều chỉnh vị trí chân nhân vật */
+    animation: chibiRun 15s linear infinite; /* Chạy từ trái qua phải trong 15s */
+}
+
+/* Hiệu ứng xoay chậm cho bông tuyết */
+@keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+    animation: spin-slow 10s linear infinite;
+}
+
+/* --- 2. Custom Scrollbar (Thanh cuộn đỏ/đen) --- */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #052e16; /* Màu nền rãnh cuộn */
+}
+::-webkit-scrollbar-thumb {
+    background: #dc2626; /* Màu thanh kéo (Đỏ) */
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #b91c1c; /* Màu khi di chuột vào */
+}
+
+/* --- 3. Các style cơ bản khác (giữ lại từ trước) --- */
+@layer base {
+  body {
+    /* Đặt nền đen mặc định để khớp với theme rạp phim */
+    @apply bg-gray-950 text-white font-sans; 
+  }
+}
