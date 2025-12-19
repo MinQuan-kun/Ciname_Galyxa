@@ -1,5 +1,5 @@
 import express from 'express';
-import { createMovie, getMovies, getMovieById } from '../controllers/movieController.js';
+import { createMovie, getMovies, getMovieById, deleteMovie, updateMovie } from '../controllers/movieController.js';
 import { upload } from '../config/cloudinary.js';
 import { verifyToken, isAdmin } from '../middleware/authMiddleware.js';
 
@@ -12,8 +12,23 @@ router.get('/:id', getMovieById);
 
 
 // --- PROTECTED ROUTES  ---
-// POST /api/movies -> Thêm phim mới
+router.post('/', 
+    verifyToken, 
+    isAdmin, 
+    upload.fields([
+        { name: 'poster', maxCount: 1 }, 
+        { name: 'banner', maxCount: 1 }
+    ]), 
+    createMovie
+);
 
-router.post('/', verifyToken, isAdmin, upload.single('poster'), createMovie);
+router.delete('/:id', verifyToken, isAdmin, deleteMovie);
+
+router.put('/:id', 
+    verifyToken, 
+    isAdmin, 
+    upload.fields([{ name: 'poster' }, { name: 'banner' }]), 
+    updateMovie
+);
 
 export default router;

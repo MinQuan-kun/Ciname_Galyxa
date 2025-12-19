@@ -13,18 +13,19 @@ export const getMovies = async (req, res) => {
 // Thêm phim mới
 export const createMovie = async (req, res) => {
   try {
-    // 1. Lấy dữ liệu dạng chuỗi từ form
-    // Vì gửi qua form-data nên các mảng (như genre) có thể bị biến thành chuỗi, cần xử lý lại
     let { title, description, director, genre, duration, releaseDate, trailer, status } = req.body;
 
-    // Xử lý genre: Nếu là chuỗi "Hành động, Hài" -> tách thành mảng ["Hành động", "Hài"]
     if (typeof genre === 'string') {
         genre = genre.split(',').map(item => item.trim());
     }
 
-    // 2. Lấy URL ảnh từ Cloudinary (nếu có upload file)
-    // Nếu không upload file thì thử lấy từ req.body.poster (trường hợp gửi link ảnh mạng)
-    const poster = req.file ? req.file.path : req.body.poster;
+    // --- Xử lý upload 2 ảnh ---
+    // Lưu ý: Khi dùng upload.fields, file sẽ nằm trong req.files (số nhiều)
+    // req.files['poster'][0] là file poster
+    // req.files['banner'][0] là file banner
+    
+    const posterPath = req.files?.poster ? req.files.poster[0].path : req.body.poster;
+    const bannerPath = req.files?.banner ? req.files.banner[0].path : req.body.banner;
 
     const newMovie = new Movie({
         title,
@@ -35,7 +36,8 @@ export const createMovie = async (req, res) => {
         releaseDate,
         trailer,
         status,
-        poster
+        poster: posterPath,
+        banner: bannerPath  
     });
 
     const savedMovie = await newMovie.save();
@@ -55,3 +57,43 @@ export const getMovieById = async (req, res) => {
         res.status(500).json(error);
     }
 }
+
+export const deleteMovie = async (req, res) => {
+  try {
+    const movie = await Movie.findByIdAndDelete(req.params.id);
+    if (!movie) return res.status(404).json({ message: "Không tìm thấy phim để xóa!" });
+    
+    res.status(200).json({ message: "Đã xóa phim thành công!" });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi xóa phim: " + error.message });
+  }
+};
+
+export const updateMovie = async (req, res) => {
+  try {
+    const { id } = req.params;
+    let updateData = { ...req.body };
+
+    // Xử lý genre (Nếu gửi lên dạng chuỗi "Hành động, Hài" -> chuyển thành mảng)
+    if (typeof updateData.genre === 'string') {
+        updateData.genre = updateData.genre.split(',').map(item => item.trim());
+    }
+
+    // Xử lý ảnh: Chỉ cập nhật nếu có file mới được upload
+    if (req.files?.poster) {
+        updateData.poster = req.files.poster[0].path;
+    }
+    if (req.files?.banner) {
+        updateData.banner = req.files.banner[0].path;
+    }
+
+    // Tìm và update
+    const updatedMovie = await Movie.findByIdAndUpdate(id, updateData, { new: true });
+
+    if (!updatedMovie) return res.status(404).json({ message: "Không tìm thấy phim!" });
+
+    res.status(200).json(updatedMovie);
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi cập nhật phim: " + error.message });
+  }
+};

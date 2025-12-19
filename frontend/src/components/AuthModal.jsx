@@ -1,10 +1,13 @@
 'use client';
+import { toast } from 'react-toastify';
 
 import React, { useState, useEffect } from 'react';
 import axiosClient from '../api/axios'; //
 import { FaUser, FaEnvelope, FaLock, FaPhone, FaTimes, FaGoogle, FaFacebook } from 'react-icons/fa';
+import { useRouter } from 'next/navigation';
 
 const AuthModal = ({ isOpen, onClose, initialTab }) => {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState(initialTab || 'login');
   const [formData, setFormData] = useState({ name: '', email: '', password: '', phone: '' });
   const [loading, setLoading] = useState(false);
@@ -47,16 +50,32 @@ const AuthModal = ({ isOpen, onClose, initialTab }) => {
 
       const res = await axiosClient.post(endpoint, payload);
 
-      alert(res.data.message);
-      
-      if (activeTab === 'login') {
+      if(activeTab === 'login'){
+        toast.success(` Chào mừng trở lại, ${res.data.user?.name || 'Bạn'}!`, {
+            position: "top-center",
+            autoClose: 2000
+        });
+        localStorage.setItem('user', JSON.stringify(res.data.user));
         onClose();
-        window.location.reload();
-      } else {
+        if (res.data.user.role === 'admin') {
+           // Chuyển sang trang Admin
+           router.push('/admin'); 
+        } else {
+           // Reload để cập nhật Navbar
+           window.location.reload(); 
+        }
+      }
+      else {
+        toast.success("🎉 Đăng ký thành công! Vui lòng đăng nhập.", {
+            position: "top-center"
+        });
         switchTab('login');
       }
     } catch (err) {
       setError(err.response?.data?.message || "Có lỗi xảy ra!");
+      toast.error(`❌ ${msg}`, {
+          position: "top-center"
+      });
     } finally {
       setLoading(false);
     }

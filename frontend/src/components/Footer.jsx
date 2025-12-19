@@ -6,7 +6,7 @@ const Footer = () => {
   return (
     <footer className="bg-gradient-to-b from-slate-900 to-black text-gray-300 pt-16 pb-8 border-t-4 border-red-600 relative overflow-hidden font-sans">
       
-      {/* --- Hiệu ứng tuyết rơi (Trang trí nền) --- */}
+      {/* --- Hiệu ứng tuyết rơi  --- */}
       <FaSnowflake className="absolute top-10 left-10 text-blue-400/10 text-7xl animate-spin-slow pointer-events-none" />
       <FaSnowflake className="absolute bottom-10 right-20 text-blue-400/10 text-9xl animate-spin-slow pointer-events-none" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
@@ -30,7 +30,7 @@ const Footer = () => {
             </p>
           </div>
 
-          {/* CỘT 2: KHÁM PHÁ (Góc Điện Ảnh) */}
+          {/* CỘT 2: KHÁM PHÁ */}
           <div>
             <h3 className="text-white font-bold text-lg mb-6 border-l-4 border-red-500 pl-3">
               Khám Phá
@@ -93,7 +93,7 @@ const Footer = () => {
           <p>© 2024 Ciname Galyxa. All rights reserved.</p>
           <div className="flex gap-4 mt-2 md:mt-0">
              <span>Winter Edition ❄️</span>
-             <span>Designed by You</span>
+             <span>Designed by Nhonn</span>
           </div>
         </div>
       </div>

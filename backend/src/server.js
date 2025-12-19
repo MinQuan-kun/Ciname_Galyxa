@@ -22,7 +22,9 @@ connectDB();
 // Middleware (Bộ lọc)
 app.use(
     cors({
-        origin: process.env.FRONTEND_URL || "http://localhost:3000", 
+        origin: process.env.NODE_ENV === "production"
+            ? "http://localhost:3000" // sau này đổi ngược lại khi deloy
+            : process.env.FRONTEND_URL ,
         credentials: true
     })
 );

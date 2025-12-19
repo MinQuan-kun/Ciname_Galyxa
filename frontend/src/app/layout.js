@@ -1,4 +1,5 @@
 import "./globals.css";
+import ToastProvider from '@/components/ToastProvider';
 
 export const metadata = {
   title: "Ciname Galyxa",
@@ -8,7 +9,13 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="vi">
-      <body className="font-sans antialiased">{children}</body>
+      <body>
+        {children}
+
+        {/* Chỉ cần đặt component này vào là xong */}
+        <ToastProvider />
+
+      </body>
     </html>
   );
 }

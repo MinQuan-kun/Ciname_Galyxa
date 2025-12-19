@@ -49,15 +49,16 @@ export const login = async (req, res) => {
             expiresIn: "1d"
         });
 
-        // Lưu token vào Cookie (an toàn hơn localStorage)
+        // Lưu token vào Cookie
         res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production", // Chỉ true khi deploy
+            secure: process.env.NODE_ENV === "production", 
             sameSite: "strict"
         }).status(200).json({ 
             message: "Đăng nhập thành công!", 
             user: { id: user._id, name: user.name, role: user.role } 
         });
+            
 
     } catch (error) {
         res.status(500).json({ message: "Lỗi server: " + error.message });
