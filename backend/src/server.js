@@ -10,6 +10,8 @@ import movieRoutes from './routes/movieRoutes.js';
 import showtimeRoutes from './routes/ShowtimeRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import roomRoutes from './routes/RoomRoutes.js';
+import userRoutes from './routes/UserRoutes.js';
+
 dotenv.config();
 
 // Khởi tạo app
@@ -37,7 +39,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/movies', movieRoutes);
 app.use('/api/showtimes', showtimeRoutes);
 app.use('/api/rooms', roomRoutes);
-
+app.use('/api/users', userRoutes);
 // Route mặc định
 app.get('/', (req, res) => {
     res.send('API Rạp Chiếu Phim Bất Ổn đang chạy... 🚀');
