@@ -1,24 +1,50 @@
-import Showtime from '../models/Showtime.js';
+// Minh hoàng 
+// Bổ sung thêm logic cho các controller chính
 
-// Lấy danh sách suất chiếu theo ID Phim
-export const getShowtimesByMovie = async (req, res) => {
+// Đã import dùm các model cần thiết
+import Showtime from '../models/Showtime.js';
+import Movie from '../models/Movie.js';
+import Theater from '../models/Theater.js';
+
+export const getShowtimes = async (req, res) => {
   try {
-    const { movieId } = req.params;
-    // Populate để lấy luôn thông tin tên Rạp thay vì chỉ hiện ID rạp
-    const showtimes = await Showtime.find({ movieId }).populate('theaterId', 'name');
-    res.status(200).json(showtimes);
+    // Todo: Lấy danh sách suất chiếu
+
+
   } catch (error) {
-    res.status(500).json({ message: "Lỗi lấy lịch chiếu", error });
+    res.status(500).json({ message: "Lỗi lấy danh sách: " + error.message });
   }
 };
 
-// Tạo suất chiếu mới (Admin)
+// 2. Tạo lịch chiếu mới 
 export const createShowtime = async (req, res) => {
   try {
-    const newShowtime = new Showtime(req.body);
-    await newShowtime.save();
-    res.status(201).json(newShowtime);
+    // Tạo lịch chiếu, nhớ kiểm tra có trùng lịch chiếu không
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json({ message: "Lỗi tạo lịch: " + error.message });
+  }
+};
+
+// 3. Xóa lịch chiếu
+export const deleteShowtime = async (req, res) => {
+  try {
+   
+    // Xóa lịch chiếu
+
+
+
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi xóa: " + error.message });
+  }
+};
+
+// 4. Chỉnh sửa lịch chiếu
+export const updateShowTime = async (req, res) => {
+  try {
+   // Chỉnh sửa lịch chiếu
+
+
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi sửa: " + error.message });
   }
 };
