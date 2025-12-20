@@ -1,7 +1,7 @@
 'use client';
-
+import { toast } from 'react-toastify';
 import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation'; // useParams để lấy ID từ URL
+import { useRouter, useParams } from 'next/navigation'; 
 import axiosClient from '@/api/axios';
 import { FaCloudUploadAlt, FaFilm, FaSave, FaArrowLeft } from 'react-icons/fa';
 import Link from 'next/link';
