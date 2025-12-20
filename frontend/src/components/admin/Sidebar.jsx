@@ -33,6 +33,7 @@ const Sidebar = () => {
     { name: 'Dashboard', path: '/admin', icon: <FaChartBar /> },
     { name: 'Quản lý Phim', path: '/admin/movies', icon: <FaFilm /> },
     { name: 'Lịch chiếu', path: '/admin/showtimes', icon: <FaCalendarAlt /> },
+    { name: 'Phòng chiếu', path: '/admin/rooms', icon: <FaCalendarAlt /> },
     { name: 'Người dùng', path: '/admin/users', icon: <FaUsers /> },
   ];
 

@@ -44,37 +44,40 @@ const AuthModal = ({ isOpen, onClose, initialTab }) => {
 
     try {
       const endpoint = activeTab === 'login' ? '/auth/login' : '/auth/register';
-      const payload = activeTab === 'login' 
+      const payload = activeTab === 'login'
         ? { email: formData.email, password: formData.password }
         : formData;
 
       const res = await axiosClient.post(endpoint, payload);
 
-      if(activeTab === 'login'){
+      if (activeTab === 'login') {
         toast.success(` Chào mừng trở lại, ${res.data.user?.name || 'Bạn'}!`, {
-            position: "top-center",
-            autoClose: 2000
+          position: "top-center",
+          autoClose: 2000
         });
         localStorage.setItem('user', JSON.stringify(res.data.user));
         onClose();
         if (res.data.user.role === 'admin') {
-           // Chuyển sang trang Admin
-           router.push('/admin'); 
+          router.push('/admin');
         } else {
-           // Reload để cập nhật Navbar
-           window.location.reload(); 
+           if (typeof onLoginSuccess === 'function') {
+               onLoginSuccess(res.data.user);
+           } else {
+               window.location.reload(); 
+           }
         }
+        onClose();
       }
       else {
         toast.success("🎉 Đăng ký thành công! Vui lòng đăng nhập.", {
-            position: "top-center"
+          position: "top-center"
         });
         switchTab('login');
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Có lỗi xảy ra!");
+      setError(err.response?.data?.message || "Có lỗi xảy ra!"); 
       toast.error(`❌ ${msg}`, {
-          position: "top-center"
+        position: "top-center"
       });
     } finally {
       setLoading(false);
@@ -84,17 +87,17 @@ const AuthModal = ({ isOpen, onClose, initialTab }) => {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
       {/* Overlay làm mờ nền */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity duration-300"
         onClick={onClose}
       ></div>
 
       {/* Hộp Modal chính */}
       <div className={`relative bg-gray-900 w-full max-w-md mx-4 p-8 rounded-3xl shadow-[0_0_50px_rgba(37,99,235,0.3)] border border-gray-700 transform transition-all duration-300 ${animate ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
-        
+
         {/* Nút đóng (X) */}
-        <button 
-          onClick={onClose} 
+        <button
+          onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-white hover:bg-white/10 p-2 rounded-full transition-all"
         >
           <FaTimes size={20} />
@@ -119,14 +122,14 @@ const AuthModal = ({ isOpen, onClose, initialTab }) => {
 
         {/* FORM */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          
+
           {/* Các trường đăng ký */}
           {activeTab === 'register' && (
             <>
               <div className="relative group">
                 <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
-                <input 
-                  type="text" name="name" placeholder="Họ và tên" required 
+                <input
+                  type="text" name="name" placeholder="Họ và tên" required
                   value={formData.name} onChange={handleChange}
                   className="w-full bg-gray-800/50 text-white pl-12 pr-4 py-3.5 rounded-xl border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-gray-500"
                 />
@@ -134,8 +137,8 @@ const AuthModal = ({ isOpen, onClose, initialTab }) => {
 
               <div className="relative group">
                 <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
-                <input 
-                  type="text" name="phone" placeholder="Số điện thoại" 
+                <input
+                  type="text" name="phone" placeholder="Số điện thoại"
                   value={formData.phone} onChange={handleChange}
                   className="w-full bg-gray-800/50 text-white pl-12 pr-4 py-3.5 rounded-xl border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-gray-500"
                 />
@@ -146,8 +149,8 @@ const AuthModal = ({ isOpen, onClose, initialTab }) => {
           {/* Email */}
           <div className="relative group">
             <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
-            <input 
-              type="email" name="email" placeholder="Địa chỉ Email" required 
+            <input
+              type="email" name="email" placeholder="Địa chỉ Email" required
               value={formData.email} onChange={handleChange}
               className="w-full bg-gray-800/50 text-white pl-12 pr-4 py-3.5 rounded-xl border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-gray-500"
             />
@@ -156,15 +159,15 @@ const AuthModal = ({ isOpen, onClose, initialTab }) => {
           {/* Password */}
           <div className="relative group">
             <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
-            <input 
-              type="password" name="password" placeholder="Mật khẩu" required 
+            <input
+              type="password" name="password" placeholder="Mật khẩu" required
               value={formData.password} onChange={handleChange}
               className="w-full bg-gray-800/50 text-white pl-12 pr-4 py-3.5 rounded-xl border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-gray-500"
             />
           </div>
 
           {/* Nút Submit */}
-          <button 
+          <button
             disabled={loading}
             className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -203,7 +206,7 @@ const AuthModal = ({ isOpen, onClose, initialTab }) => {
         {/* Switcher Login/Register */}
         <p className="mt-8 text-center text-gray-400 text-sm">
           {activeTab === 'login' ? "Chưa có tài khoản? " : "Đã có tài khoản? "}
-          <button 
+          <button
             onClick={() => switchTab(activeTab === 'login' ? 'register' : 'login')}
             className="text-blue-400 hover:text-purple-400 font-bold ml-1 transition-colors underline decoration-2 decoration-transparent hover:decoration-purple-400 underline-offset-4"
           >
