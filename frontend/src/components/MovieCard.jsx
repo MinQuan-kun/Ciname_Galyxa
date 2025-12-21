@@ -1,6 +1,6 @@
 import React from 'react';
 import { FaStar, FaTicketAlt } from 'react-icons/fa';
-
+import Link from 'next/link';
 const MovieCard = ({ movie }) => {
   // Xử lý genre: Đảm bảo nó luôn là mảng để map ra các tag
   const genres = Array.isArray(movie.genre) 
@@ -21,17 +21,13 @@ const MovieCard = ({ movie }) => {
         {/* Overlay đen mờ khi hover */}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
 
-        {/* Nút Mua Vé hiện lên giữa ảnh */}
+        {/* Nút đặt Vé hiện lên giữa ảnh */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100">
-           <button className="flex items-center gap-2 bg-red-600 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-red-700 transform hover:scale-105 transition cursor-pointer">
-             <FaTicketAlt /> Mua Vé
-           </button>
-        </div>
-
-        {/* Rating nổi ở góc */}
-        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md flex items-center gap-1 border border-yellow-500/30">
-            <FaStar className="text-yellow-400 text-xs" />
-            <span className="text-white text-xs font-bold">{movie.rating || 0}</span>
+           <Link href={`/booking/movie/${movie._id}`}>
+               <button className="flex items-center gap-2 bg-red-600 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-red-700 transform hover:scale-105 transition cursor-pointer">
+                 <FaTicketAlt /> Đặt Vé
+               </button>
+           </Link>
         </div>
       </div>
 

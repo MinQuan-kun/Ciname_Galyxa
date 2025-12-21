@@ -5,7 +5,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, EffectFade, Pagination, Navigation } from 'swiper/modules';
 import { FaChevronLeft, FaChevronRight, FaPlay, FaTicketAlt, FaTimes, FaStar, FaCalendarAlt } from 'react-icons/fa';
 import axiosClient from '../api/axios';
-
+import Link from 'next/link';
 import 'swiper/css';
 import 'swiper/css/effect-fade';
 import 'swiper/css/pagination';
@@ -105,9 +105,6 @@ const Banner = () => {
                                         <span className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg shadow-blue-500/20">
                                             {movie.status || "Đang Chiếu"}
                                         </span>
-                                        <span className="flex items-center gap-1 text-yellow-400 text-sm font-bold bg-black/40 px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
-                                            <FaStar /> 8.5
-                                        </span>
                                     </div>
 
                                     {/* TIÊU ĐỀ PHIM  */}
@@ -130,11 +127,12 @@ const Banner = () => {
 
                                     {/* Nút bấm hành động */}
                                     <div className="flex flex-wrap gap-4 pt-2">
-                                        <button className="flex items-center gap-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg shadow-red-600/20 hover:shadow-red-500/40 hover:-translate-y-1 transition-all duration-300">
-                                            <FaTicketAlt />
-                                            <span>Đặt Vé Ngay</span>
-                                        </button>
-
+                                        <Link href={`/booking/movie/${movie._id}`} className="group">
+                                            <button className="flex items-center gap-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg shadow-red-600/20 hover:shadow-red-500/40 hover:-translate-y-1 transition-all duration-300">
+                                                <FaTicketAlt />
+                                                <span>Đặt Vé Ngay</span>
+                                            </button>
+                                        </Link>
                                         {movie.trailer && (
                                             <button
                                                 onClick={() => handlePlayTrailer(movie.trailer)}

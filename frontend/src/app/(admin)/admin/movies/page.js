@@ -54,7 +54,7 @@ const MovieManagementPage = () => {
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <div>
           <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
-            Quản Lý Phim
+            QUẢN LÝ PHIM
           </h1>
           <p className="text-slate-400 text-sm mt-1">Tổng số phim: <span className="text-white font-bold">{movies.length}</span></p>
         </div>

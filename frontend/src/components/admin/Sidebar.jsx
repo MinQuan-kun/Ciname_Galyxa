@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FaFilm, FaCalendarAlt, FaUsers, FaChartBar, FaSignOutAlt, FaHome } from 'react-icons/fa';
+import { FaFilm, FaCalendarAlt, FaUsers, FaChartBar, FaSignOutAlt, FaHome, FaGift, FaClock, FaVideo } from 'react-icons/fa';
 import axiosClient from '../../api/axios';
 import { toast } from 'react-toastify';
 const Sidebar = () => {
@@ -32,8 +32,9 @@ const Sidebar = () => {
   const menuItems = [
     { name: 'Dashboard', path: '/admin', icon: <FaChartBar /> },
     { name: 'Quản lý Phim', path: '/admin/movies', icon: <FaFilm /> },
-    { name: 'Lịch chiếu', path: '/admin/showtimes', icon: <FaCalendarAlt /> },
-    { name: 'Phòng chiếu', path: '/admin/rooms', icon: <FaCalendarAlt /> },
+    { name: 'Lịch chiếu', path: '/admin/showtimes', icon: <FaClock/> },
+    { name: 'Phòng chiếu', path: '/admin/rooms', icon: <FaVideo/> },
+    { name: 'Dịch vụ & Khuyến mãi', path: '/admin/combos', icon: <FaGift /> },
     { name: 'Người dùng', path: '/admin/users', icon: <FaUsers /> },
   ];
 

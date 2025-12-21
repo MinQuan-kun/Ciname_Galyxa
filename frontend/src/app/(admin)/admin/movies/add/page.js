@@ -15,11 +15,13 @@ const AddMoviePage = () => {
     title: '',
     description: '',
     director: '',
-    genre: '', // Nhập chuỗi: "Hành động, Hài"
+    genre: '', 
     duration: '',
     releaseDate: '',
     trailer: '',
-    status: 'Đang chiếu'
+    status: 'Đang chiếu' ,
+    ageLimit: 'P', 
+    note: ''
   });
 
   // State lưu file ảnh
@@ -142,7 +144,45 @@ const AddMoviePage = () => {
               className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 focus:border-blue-500 focus:outline-none" placeholder="Tóm tắt phim..." />
           </div>
 
-          {/* Hàng 4: Trailer & Trạng thái */}
+          {/* --- Hàng 4: Phân loại & Chú thích --- */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-900/50 p-4 rounded-xl border border-slate-700">
+             
+             {/* Chọn Độ Tuổi */}
+             <div>
+                <label className="block text-slate-400 mb-2 text-sm font-bold flex items-center gap-2">
+                    Phân loại độ tuổi <span className="text-red-500">*</span>
+                </label>
+                <select 
+                    name="ageLimit" 
+                    value={formData.ageLimit} 
+                    onChange={handleChange}
+                    className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 focus:border-blue-500 focus:outline-none text-white font-bold"
+                >
+                    <option value="P">P - Mọi lứa tuổi</option>
+                    <option value="K">K - Dưới 13t có người giám hộ</option>
+                    <option value="T13">T13 - Cấm dưới 13 tuổi</option>
+                    <option value="T16">T16 - Cấm dưới 16 tuổi</option>
+                    <option value="T18">T18 - Cấm dưới 18 tuổi</option>
+                    <option value="C">C - Cấm phổ biến</option>
+                </select>
+                <p className="text-xs text-slate-500 mt-1">Chọn đúng theo quy định kiểm duyệt.</p>
+             </div>
+
+             {/* Nhập Chú thích */}
+             <div>
+                <label className="block text-slate-400 mb-2 text-sm font-bold">Chú thích thêm</label>
+                <input 
+                    type="text" 
+                    name="note" 
+                    value={formData.note} 
+                    onChange={handleChange}
+                    className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 focus:border-blue-500 focus:outline-none placeholder-slate-600" 
+                    placeholder="VD: Cần mang CCCD, Có cảnh bạo lực..." 
+                />
+             </div>
+          </div>
+
+          {/* Hàng 5: Trailer & Trạng thái */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-slate-400 mb-2 text-sm font-bold">Link Trailer (Youtube)</label>

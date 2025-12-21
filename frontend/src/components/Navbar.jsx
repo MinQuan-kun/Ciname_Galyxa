@@ -2,7 +2,8 @@
 import { toast } from 'react-toastify';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FaSnowflake, FaGift, FaSignOutAlt, FaUserCircle } from 'react-icons/fa';
+// Import thêm FaWallet để hiển thị icon ví điểm
+import { FaSnowflake, FaGift, FaSignOutAlt, FaWallet, FaUserCircle } from 'react-icons/fa';
 import AuthModal from './AuthModal'; 
 import axiosClient from '../api/axios'; 
 
@@ -33,9 +34,9 @@ const Navbar = () => {
       try {
           await axiosClient.post('/auth/logout'); 
           toast.success(` Đăng xuất thành công !`, {
-                      position: "top-center",
-                      autoClose: 2000
-                  });
+              position: "top-center",
+              autoClose: 2000
+          });
           localStorage.removeItem('user'); 
           setUser(null);
           window.location.href = '/'; 
@@ -72,23 +73,56 @@ const Navbar = () => {
           <div className="flex items-center gap-4">
             
             {user ? (
-                // --- ĐÃ ĐĂNG NHẬP ---
-                <div className="flex items-center gap-3 animate-in fade-in duration-300">
-                    <span className="hidden md:flex items-center gap-2 text-sm font-bold text-blue-300">
-                        <FaUserCircle className="text-xl"/> Chào, {user.name}
-                    </span>
+                // --- ĐÃ ĐĂNG NHẬP (PHIÊN BẢN MỚI) ---
+                <div className="flex items-center gap-4 animate-in fade-in duration-300">
                     
+                    {/* 1. Hiển thị Điểm Tích Lũy */}
+                    <div className="hidden md:flex flex-col items-end mr-1">
+                        <span className="text-[10px] text-slate-400 uppercase font-bold flex items-center gap-1">
+                             <FaWallet className="text-yellow-500"/> Điểm tích lũy
+                        </span>
+                        <span className="text-sm font-black text-yellow-400">
+                             {new Intl.NumberFormat('vi-VN').format(user.points || 0)} P
+                        </span>
+                    </div>
+
+                    {/* 2. Link tới Profile + Avatar */}
+                    <Link href="/profile" className="flex items-center gap-3 group">
+                        <div className="text-right hidden sm:block">
+                            <p className="text-sm font-bold text-white group-hover:text-blue-400 transition truncate max-w-[150px]">
+                                {user.name}
+                            </p>
+                            <p className="text-xs text-slate-500">Thành viên</p>
+                        </div>
+                        
+                        {/* Avatar Image (Fallback nếu ko có ảnh thì dùng UI Avatar) */}
+                        <div className="w-10 h-10 rounded-full border-2 border-slate-700 overflow-hidden group-hover:border-blue-500 transition shadow-lg relative bg-slate-800">
+                             <img 
+                                src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`} 
+                                alt="Avatar" 
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    e.target.onerror = null; 
+                                    e.target.src = "https://via.placeholder.com/150?text=U";
+                                }}
+                            />
+                        </div>
+                    </Link>
+                    
+                    {/* 3. Nút Admin (Chỉ hiện nếu là Admin) */}
                     {user.role === 'admin' && (
-                        <Link href="/admin" className="text-xs bg-red-600 px-2 py-1 rounded text-white font-bold hover:bg-red-500">
+                        <Link href="/admin" className="hidden lg:block text-xs bg-red-600 px-3 py-1.5 rounded-lg text-white font-bold hover:bg-red-500 shadow-red-500/20 shadow-lg">
                             QUẢN TRỊ
                         </Link>
                     )}
 
+                    {/* 4. Nút Đăng xuất */}
                     <button 
                         onClick={handleLogout}
-                        className="flex items-center gap-1 text-sm bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg border border-gray-600 transition"
+                        className="flex items-center justify-center w-10 h-10 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 rounded-full border border-slate-700 transition group"
+                        title="Đăng xuất"
                     >
-                        <FaSignOutAlt /> <span className="hidden md:inline">Đăng xuất</span>
+                        <FaSignOutAlt className="group-hover:scale-110 transition-transform"/>
                     </button>
                 </div>
             ) : (

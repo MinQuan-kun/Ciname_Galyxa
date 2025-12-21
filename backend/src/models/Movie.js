@@ -13,6 +13,17 @@ const movieSchema = new mongoose.Schema({
   
   trailer: { type: String },
   rating: { type: Number, default: 0 },
+
+  // 1. Phân loại độ tuổi (Rate)
+  ageLimit: { 
+    type: String, 
+    enum: ['P', 'K', 'T13', 'T16', 'T18', 'C'], 
+    default: 'P' 
+  },
+  
+  // 2. Chú thích thêm 
+  note: { type: String }, 
+  
   status: { 
     type: String, 
     enum: ['Đang chiếu', 'Sắp chiếu', 'Đã kết thúc'], 

@@ -14,7 +14,9 @@ const EditMoviePage = () => {
     // State form
     const [formData, setFormData] = useState({
         title: '', description: '', director: '', genre: '',
-        duration: '', releaseDate: '', trailer: '', status: 'Đang chiếu'
+        duration: '', releaseDate: '', trailer: '', status: 'Đang chiếu',
+        ageLimit: 'P', 
+        note: ''
     });
 
     // State ảnh (File mới & Link ảnh cũ để preview)
@@ -41,7 +43,9 @@ const EditMoviePage = () => {
                     // Chuyển ngày Date ISO sang định dạng YYYY-MM-DD cho input date
                     releaseDate: movie.releaseDate ? new Date(movie.releaseDate).toISOString().split('T')[0] : '',
                     trailer: movie.trailer || '',
-                    status: movie.status
+                    status: movie.status,
+                    ageLimit: movie.ageLimit || 'P',
+                    note: movie.note || ''
                 });
 
                 // Set ảnh cũ vào preview
@@ -178,6 +182,40 @@ const EditMoviePage = () => {
                         </div>
                     </div>
 
+                    {/* --- RATE & NOTE --- */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-900/50 p-4 rounded-xl border border-slate-700">
+                        <div>
+                            <label className="block text-slate-400 mb-2 text-sm font-bold flex items-center gap-2">
+                                Phân loại độ tuổi <span className="text-red-500">*</span>
+                            </label>
+                            <select 
+                                name="ageLimit" 
+                                value={formData.ageLimit} 
+                                onChange={handleChange}
+                                className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 focus:border-blue-500 focus:outline-none text-white font-bold"
+                            >
+                                <option value="P">P - Mọi lứa tuổi</option>
+                                <option value="K">K - Dưới 13t có người giám hộ</option>
+                                <option value="T13">T13 - Cấm dưới 13 tuổi</option>
+                                <option value="T16">T16 - Cấm dưới 16 tuổi</option>
+                                <option value="T18">T18 - Cấm dưới 18 tuổi</option>
+                                <option value="C">C - Cấm phổ biến</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-slate-400 mb-2 text-sm font-bold">Chú thích thêm</label>
+                            <input 
+                                type="text" 
+                                name="note" 
+                                value={formData.note} 
+                                onChange={handleChange}
+                                className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 focus:border-blue-500 focus:outline-none" 
+                                placeholder="VD: Cần mang CCCD..." 
+                            />
+                        </div>
+                    </div>
+
                     {/* KHU VỰC ẢNH */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-slate-700 pt-6 mt-6">
                         <div className="space-y-2">
@@ -212,6 +250,8 @@ const EditMoviePage = () => {
                             </div>
                         </div>
                     </div>
+
+                    
 
                     {/* Nút Submit */}
                     <div className="flex justify-end pt-6">
