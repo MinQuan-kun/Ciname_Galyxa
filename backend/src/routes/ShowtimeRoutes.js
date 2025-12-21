@@ -7,7 +7,8 @@ const router = express.Router();
 router.get('/:movieId', getShowtimes);
 
 // --- PROTECTED ROUTES  ---
-router.post('/', verifyToken, isAdmin, createShowtime);
+// router.post('/', verifyToken, isAdmin, createShowtime);
+router.post('/', createShowtime);
 router.put('/:id', verifyToken, isAdmin, updateShowTime);
 router.delete('/:id', verifyToken, isAdmin, deleteShowtime);
 
