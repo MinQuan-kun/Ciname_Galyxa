@@ -202,12 +202,12 @@ const ShowtimesPage = () => {
       </header>
 
       {/* FILTER BAR (CHỌN PHIM ĐỂ XEM) */}
-      <div className="bg-gray-800 p-4 rounded-xl border border-gray-700 mb-6 flex items-center gap-4 shadow-md">
-        <span className="text-orange-400 font-bold">🔍 Chọn phim để xem lịch:</span>
+      <div className="bg-gray-800 p-4 rounded-xl border border-gray-700 mb-6 flex flex-col md:flex-row items-start md:items-center gap-4 shadow-md">
+        <span className="text-orange-400 font-bold whitespace-nowrap">Chọn phim để xem lịch:</span>
         <select 
           value={selectedMovieId}
           onChange={handleFilterChange}
-          className="bg-gray-900 text-white border border-gray-600 rounded px-3 py-2 outline-none focus:border-orange-500 flex-1 max-w-md"
+          className="bg-gray-900 text-white border border-gray-600 rounded px-3 py-2 outline-none focus:border-orange-500 w-full md:flex-1 md:max-w-md cursor-pointer"
         >
           <option value="">-- Chọn phim --</option>
           {movies.map(movie => (

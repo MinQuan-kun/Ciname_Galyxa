@@ -55,7 +55,7 @@ const MovieCard = ({ movie }) => {
                 {movie.duration} phút
             </span>
             <span className="text-red-500 font-semibold text-xs border border-red-500/30 px-2 py-1 rounded">
-                Đang Chiếu
+                {movie.status}
             </span>
         </div>
       </div>

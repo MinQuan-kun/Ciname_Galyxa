@@ -4,7 +4,7 @@
 // Đã import dùm các model cần thiết
 import Showtime from '../models/Showtime.js';
 import Movie from '../models/Movie.js';
-import Room from '../models/Room.js'; // Đã đổi từ Theater sang Room
+import Room from '../models/Room.js';
 
 // --- HÀM HỖ TRỢ ---
 // Kiểm tra trùng lịch chiếu
@@ -112,7 +112,7 @@ export const createShowtime = async (req, res) => {
   }
 };
 
-// 3. Xóa lịch chiếu (Logic không thay đổi nhiều, chỉ là thao tác trên Showtime ID)
+// 3. Xóa lịch chiếu
 export const deleteShowtime = async (req, res) => {
   try {
     const { id } = req.params;
@@ -175,5 +175,24 @@ export const updateShowTime = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ message: "Lỗi sửa: " + error.message });
+  }
+};
+
+export const getShowtimeById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Populate để lấy luôn thông tin Phim (tên, ảnh) và Phòng (sơ đồ ghế)
+    const showtime = await Showtime.findById(id)
+      .populate('movieId') 
+      .populate('roomId');
+
+    if (!showtime) {
+      return res.status(404).json({ message: "Không tìm thấy suất chiếu" });
+    }
+
+    res.status(200).json(showtime);
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi server: " + error.message });
   }
 };

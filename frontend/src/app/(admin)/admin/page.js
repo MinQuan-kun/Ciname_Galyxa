@@ -78,7 +78,7 @@ const DashboardPage = () => {
       {/* 1. Header Chào Mừng */}
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
+          <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
             Dashboard
           </h1>
           <p className="text-slate-400 mt-2">Tổng quan tình hình kinh doanh hôm nay</p>

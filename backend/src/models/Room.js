@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
 
 const seatSchema = new mongoose.Schema({
-  id: { type: String, required: true }, // VD: "A1", "B5"
-  row: { type: String, required: true }, // VD: "A"
+  id: { type: String, required: true },
+  row: { type: String, required: true },
   number: { type: Number, required: true }, 
   type: { 
     type: String, 
-    enum: ['Standard', 'VIP', 'Couple'], 
+    enum: ['Standard', 'VIP', 'Couple', 'Hidden'], 
     default: 'Standard' 
   },
   priceSurcharge: { type: Number, default: 0 }

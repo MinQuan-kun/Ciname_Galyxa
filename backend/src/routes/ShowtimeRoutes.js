@@ -1,11 +1,11 @@
 import express from 'express';
-import { getShowtimes, createShowtime, deleteShowtime, updateShowTime} from '../controllers/showtimeController.js';
+import { getShowtimes, createShowtime, deleteShowtime, updateShowTime, getShowtimeById} from '../controllers/showtimeController.js';
 import { verifyToken, isAdmin } from '../middleware/authMiddleware.js';
 const router = express.Router();
 
 // --- PUBLIC ROUTES  ---
 router.get('/:movieId', getShowtimes);
-
+router.get('/detail/:id', getShowtimeById);
 // --- PROTECTED ROUTES  ---
 router.post('/', verifyToken, isAdmin, createShowtime);
 router.put('/:id', verifyToken, isAdmin, updateShowTime);

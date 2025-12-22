@@ -111,8 +111,7 @@ const Navbar = () => {
                     
                     {/* 3. Nút Admin (Chỉ hiện nếu là Admin) */}
                     {user.role === 'admin' && (
-                        <Link href="/admin" className="hidden lg:block text-xs bg-red-600 px-3 py-1.5 rounded-lg text-white font-bold hover:bg-red-500 shadow-red-500/20 shadow-lg">
-                            QUẢN TRỊ
+                        <Link href="/admin">
                         </Link>
                     )}
 

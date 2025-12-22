@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, EffectFade, Pagination, Navigation } from 'swiper/modules';
-import { FaChevronLeft, FaChevronRight, FaPlay, FaTicketAlt, FaTimes, FaStar, FaCalendarAlt } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaPlay, FaTicketAlt, FaTimes } from 'react-icons/fa';
 import axiosClient from '../api/axios';
 import Link from 'next/link';
 import 'swiper/css';
@@ -16,7 +16,6 @@ const Banner = () => {
     const [loading, setLoading] = useState(true);
     const [activeTrailer, setActiveTrailer] = useState(null);
 
-    // Ref để điều khiển dừng/chạy slide khi xem trailer
     const swiperRef = useRef(null);
 
     useEffect(() => {
@@ -24,9 +23,25 @@ const Banner = () => {
             try {
                 const res = await axiosClient.get('/movies');
                 if (res.data && res.data.length > 0) {
-                    // Random và lấy 3 phim
+                    // 1. Random và lấy 3 phim
                     const shuffled = [...res.data].sort(() => 0.5 - Math.random());
-                    setMovies(shuffled.slice(0, 3));
+                    const selectedMovies = shuffled.slice(0, 3);
+
+                    // 2. [UPDATE] KIỂM TRA LỊCH CHIẾU CHO TỪNG PHIM
+                    // Để biết phim Sắp chiếu có suất chiếu sớm hay không
+                    const moviesWithStatus = await Promise.all(selectedMovies.map(async (movie) => {
+                        try {
+                            // Gọi API check lịch chiếu
+                            const showtimeRes = await axiosClient.get(`/showtimes/${movie._id}`);
+                            // Nếu mảng trả về có dữ liệu => Đã có lịch
+                            const hasShowtimes = showtimeRes.data && showtimeRes.data.length > 0;
+                            return { ...movie, hasShowtimes };
+                        } catch (err) {
+                            return { ...movie, hasShowtimes: false };
+                        }
+                    }));
+
+                    setMovies(moviesWithStatus);
                 }
             } catch (error) {
                 console.error("Lỗi tải Banner:", error);
@@ -75,6 +90,7 @@ const Banner = () => {
                 modules={[Autoplay, EffectFade, Pagination, Navigation]}
                 spaceBetween={0}
                 effect={'fade'}
+                loop={true} 
                 centeredSlides={true}
                 autoplay={{ delay: 6000, disableOnInteraction: false }}
                 pagination={{ clickable: true, dynamicBullets: true }}
@@ -84,35 +100,39 @@ const Banner = () => {
                 {movies.map((movie) => (
                     <SwiperSlide key={movie._id}>
                         <div className="relative h-full w-full">
-                            {/* 1. Ảnh nền & Lớp phủ */}
+                            {/* Ảnh nền */}
                             <img
                                 src={movie.banner || movie.poster || "https://via.placeholder.com/1920x1080"}
                                 alt={movie.title}
                                 className="absolute inset-0 w-full h-full object-cover object-center brightness-[0.7]"
                             />
-                            {/* Gradient làm tối phần dưới và bên trái để chữ dễ đọc */}
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/30 to-transparent"></div>
                             <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/40 to-transparent"></div>
 
-                            {/* 2. Nội dung chính */}
+                            {/* Nội dung chính */}
                             <div className="absolute top-1/2 left-4 md:left-16 lg:left-24 -translate-y-1/2 max-w-3xl z-20 pr-4">
 
-                                {/* Hiệu ứng Fade In cho chữ */}
                                 <div className="animate-in slide-in-from-left-10 fade-in duration-700 space-y-5">
 
-                                    {/* Badge Trạng thái & Rating */}
+                                    {/* Badge Trạng thái */}
                                     <div className="flex items-center gap-3">
-                                        <span className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg shadow-blue-500/20">
+                                        <span className={`text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg ${movie.status === 'Sắp chiếu' ? 'bg-orange-600 shadow-orange-500/20' : 'bg-blue-600 shadow-blue-500/20'}`}>
                                             {movie.status || "Đang Chiếu"}
                                         </span>
+                                        {/* Nếu là Sắp chiếu mà có lịch thì hiện thêm badge nhỏ */}
+                                        {movie.status === 'Sắp chiếu' && movie.hasShowtimes && (
+                                            <span className="bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider animate-pulse">
+                                                Có suất chiếu sớm
+                                            </span>
+                                        )}
                                     </div>
 
-                                    {/* TIÊU ĐỀ PHIM  */}
+                                    {/* Tiêu đề */}
                                     <h2 className="text-3xl md:text-2xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-blue-400 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)] line-clamp-2 leading-snug py-2 uppercase tracking-tighter mb-2">
                                         {movie.title}
                                     </h2>
 
-                                    {/* Thông tin phụ (Thể loại, Thời lượng) */}
+                                    {/* Info */}
                                     <div className="flex flex-wrap items-center gap-4 text-slate-300 text-sm md:text-base font-medium">
                                         <span className="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
                                         <span>{Array.isArray(movie.genre) ? movie.genre.join(", ") : movie.genre}</span>
@@ -125,14 +145,20 @@ const Banner = () => {
                                         {movie.description}
                                     </p>
 
-                                    {/* Nút bấm hành động */}
+                                    {/* Buttons */}
                                     <div className="flex flex-wrap gap-4 pt-2">
-                                        <Link href={`/booking/movie/${movie._id}`} className="group">
-                                            <button className="flex items-center gap-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg shadow-red-600/20 hover:shadow-red-500/40 hover:-translate-y-1 transition-all duration-300">
-                                                <FaTicketAlt />
-                                                <span>Đặt Vé Ngay</span>
-                                            </button>
-                                        </Link>
+                                        
+                                        {/* --- 3. [UPDATE] LOGIC HIỂN THỊ NÚT ĐẶT VÉ --- */}
+                                        {/* Hiện nút khi: (Đang chiếu) HOẶC (Sắp chiếu NHƯNG đã có lịch) */}
+                                        {(movie.status === 'Đang chiếu' || (movie.status === 'Sắp chiếu' && movie.hasShowtimes)) && (
+                                            <Link href={`/booking/movie/${movie._id}`} className="group">
+                                                <button className="flex items-center gap-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg shadow-red-600/20 hover:shadow-red-500/40 hover:-translate-y-1 transition-all duration-300">
+                                                    <FaTicketAlt />
+                                                    <span>{movie.status === 'Sắp chiếu' ? 'Đặt Vé Sớm' : 'Đặt Vé Ngay'}</span>
+                                                </button>
+                                            </Link>
+                                        )}
+                                        
                                         {movie.trailer && (
                                             <button
                                                 onClick={() => handlePlayTrailer(movie.trailer)}
@@ -153,7 +179,7 @@ const Banner = () => {
                 ))}
             </Swiper>
 
-            {/* Nút điều hướng  */}
+            {/* Navigation Buttons */}
             <div className="button-prev-slide absolute top-1/2 left-6 z-30 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-black/20 hover:bg-blue-600 text-white backdrop-blur-sm border border-white/10 transition-all opacity-0 group-hover:opacity-100 hover:scale-110 cursor-pointer">
                 <FaChevronLeft size={20} />
             </div>
@@ -161,14 +187,11 @@ const Banner = () => {
                 <FaChevronRight size={20} />
             </div>
 
-            {/* --- POPUP VIDEO TRAILER --- */}
+            {/* Popup Trailer */}
             {activeTrailer && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300">
                     <div className="relative w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(37,99,235,0.2)] border border-slate-800">
-                        <button
-                            onClick={closeTrailer}
-                            className="absolute top-4 right-4 z-20 bg-black/50 hover:bg-red-600 text-white p-2 rounded-full transition-all backdrop-blur-md group"
-                        >
+                        <button onClick={closeTrailer} className="absolute top-4 right-4 z-20 bg-black/50 hover:bg-red-600 text-white p-2 rounded-full transition-all backdrop-blur-md group">
                             <FaTimes size={20} className="group-hover:rotate-90 transition-transform" />
                         </button>
                         <iframe

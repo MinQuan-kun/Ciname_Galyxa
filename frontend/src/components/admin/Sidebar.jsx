@@ -39,7 +39,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="w-64 bg-slate-900 h-screen text-white fixed left-0 top-0 shadow-xl flex flex-col border-r border-slate-700">
+    <div className="w-64 bg-slate-900 h-screen text-white fixed left-0 top-0 shadow-xl flex flex-col border-r border-slate-700 z-50">
       
       {/* LOGO */}
       <div className="p-6 border-b border-slate-700 flex flex-col items-center">

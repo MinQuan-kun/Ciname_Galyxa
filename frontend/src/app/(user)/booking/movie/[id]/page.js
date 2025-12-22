@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import axiosClient from '@/api/axios';
-import { FaCalendarAlt, FaClock, FaStar, FaPlay, FaUserSecret, FaUsers, FaFilm, FaLanguage, FaExclamationTriangle } from 'react-icons/fa';
+import { FaCalendarAlt, FaClock, FaPlay, FaUserSecret, FaUsers, FaFilm, FaLanguage, FaExclamationTriangle, FaMapMarkerAlt } from 'react-icons/fa';
+import AuthModal from '@/components/AuthModal';
+import { toast } from 'react-toastify';
 
 const MovieBookingPage = () => {
   const { id } = useParams();
@@ -12,6 +14,11 @@ const MovieBookingPage = () => {
   const [movie, setMovie] = useState(null);
   const [showtimes, setShowtimes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter(); ///page.js]
+  const [showLogin, setShowLogin] = useState(false);
+
+  // State mới: Ngày đang chọn
+  const [selectedDate, setSelectedDate] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -19,8 +26,19 @@ const MovieBookingPage = () => {
         const movieRes = await axiosClient.get(`/movies/${id}`);
         setMovie(movieRes.data);
         
-        const showtimeRes = await axiosClient.get(`/showtimes?movieId=${id}`);
-        setShowtimes(showtimeRes.data);
+        // Gọi API lấy lịch chiếu
+        const showtimeRes = await axiosClient.get(`/showtimes/${id}`);
+        const data = showtimeRes.data;
+        setShowtimes(data);
+
+        // Tự động chọn ngày đầu tiên có lịch
+        if (data.length > 0) {
+            // Sắp xếp lịch theo thời gian tăng dần trước
+            const sorted = data.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+            const firstDate = new Date(sorted[0].startTime).toDateString();
+            setSelectedDate(firstDate);
+        }
+
       } catch (error) {
         console.error("Lỗi:", error);
       } finally {
@@ -30,6 +48,67 @@ const MovieBookingPage = () => {
     fetchData();
   }, [id]);
 
+  // --- XỬ LÝ LOGIC NHÓM LỊCH CHIẾU ---
+
+  // 1. Lấy danh sách các ngày duy nhất
+  const uniqueDates = useMemo(() => {
+    const dates = showtimes.map(item => {
+        const d = new Date(item.startTime);
+        return {
+            fullDate: d.toDateString(), // Dùng để so sánh
+            dayName: d.toLocaleDateString('vi-VN', { weekday: 'short' }), // Thứ 2, CN...
+            dayNum: d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }), // 20/10
+            iso: d // Để sort
+        };
+    });
+
+    // Lọc trùng và sắp xếp
+    const unique = [];
+    const map = new Map();
+    for (const item of dates) {
+        if(!map.has(item.fullDate)){
+            map.set(item.fullDate, true);
+            unique.push(item);
+        }
+    }
+    return unique.sort((a, b) => a.iso - b.iso);
+  }, [showtimes]);
+
+  // 2. Lọc lịch theo ngày đang chọn & Nhóm theo Rạp
+  const groupedShowtimes = useMemo(() => {
+      if (!selectedDate) return [];
+
+      // Lọc các suất trong ngày đã chọn
+      const filtered = showtimes.filter(s => new Date(s.startTime).toDateString() === selectedDate);
+
+      // Nhóm theo Room ID
+      const grouped = {};
+      filtered.forEach(s => {
+          // Xử lý fallback nếu field là room hoặc roomId
+          const roomObj = s.room || s.roomId; 
+          const roomId = roomObj?._id || 'unknown';
+          
+          if (!grouped[roomId]) {
+              grouped[roomId] = {
+                  roomName: roomObj?.name || 'Rạp chưa đặt tên',
+                  roomType: roomObj?.type || '2D',
+                  screenType: roomObj?.screenType || 'Standard',
+                  times: []
+              };
+          }
+          grouped[roomId].times.push(s);
+      });
+
+      // Sắp xếp các giờ chiếu trong từng rạp tăng dần
+      Object.values(grouped).forEach(group => {
+          group.times.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+      });
+
+      return Object.values(grouped);
+  }, [showtimes, selectedDate]);
+
+
+  // Helper: Embed Youtube
   const getEmbedUrl = (url) => {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -37,7 +116,6 @@ const MovieBookingPage = () => {
     return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
   };
 
-  // Helper: Màu sắc cho nhãn độ tuổi
   const getAgeColor = (code) => {
       switch(code) {
           case 'P': return 'bg-green-500';
@@ -49,13 +127,23 @@ const MovieBookingPage = () => {
       }
   };
 
+  const handleTimeClick = (showtimeId) => {
+        const user = localStorage.getItem('user'); 
+        if (user) {
+            router.push(`/booking/${showtimeId}`);
+        } else {
+            toast.info("Vui lòng đăng nhập để đặt vé!");
+            setShowLogin(true);
+        }
+    };
+
   if (loading) return <div className="min-h-screen bg-slate-950 flex justify-center items-center text-white">Đang tải...</div>;
   if (!movie) return <div className="text-white text-center pt-20">Không tìm thấy phim!</div>;
 
   return (
     <div className="min-h-screen bg-slate-950 text-white pb-20">
       
-      {/* --- BANNER --- */}
+      {/* --- BANNER (Giữ nguyên) --- */}
       <div className="relative h-[450px] w-full overflow-hidden group">
         <img src={movie.banner || movie.poster} alt="" className="w-full h-full object-cover opacity-30 blur-sm transform group-hover:scale-105 transition-transform duration-700" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent"></div>
@@ -64,19 +152,16 @@ const MovieBookingPage = () => {
             {/* Poster nhỏ */}
             <div className="relative shrink-0 hidden md:block">
                 <img src={movie.poster} alt={movie.title} className="w-52 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.1)] border border-slate-700" />
-                {/* Nhãn độ tuổi nổi bật trên Poster */}
                 <div className={`absolute top-2 left-2 ${getAgeColor(movie.ageLimit)} text-white text-xs font-bold px-2 py-1 rounded shadow-md`}>
                     {movie.ageLimit || 'P'}
                 </div>
             </div>
             
-            {/* Text Info */}
             <div className="mb-4 flex-1">
                 <div className="flex items-center gap-3 mb-2">
                     <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
                         {movie.status || "Đang Chiếu"}
                     </span>
-                    {/* Nhãn độ tuổi mobile */}
                     <span className={`md:hidden ${getAgeColor(movie.ageLimit)} text-white text-[10px] font-bold px-2 py-1 rounded`}>
                         {movie.ageLimit || 'P'}
                     </span>
@@ -92,7 +177,6 @@ const MovieBookingPage = () => {
                     <span className="flex items-center gap-2"><FaCalendarAlt className="text-green-500"/> {new Date(movie.releaseDate || Date.now()).toLocaleDateString('vi-VN')}</span>
                 </div>
 
-                {/* --- HIỂN THỊ CHÚ THÍCH (NOTE) --- */}
                 {movie.note && (
                     <div className="mt-4 flex items-start gap-2 bg-red-500/10 border border-red-500/30 p-3 rounded-lg max-w-2xl">
                         <FaExclamationTriangle className="text-red-500 mt-0.5 shrink-0" />
@@ -105,46 +189,81 @@ const MovieBookingPage = () => {
 
       <div className="max-w-7xl mx-auto px-4 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
         
-        {/* --- CỘT TRÁI: LỊCH CHIẾU --- */}
+        {/* --- CỘT TRÁI: LỊCH CHIẾU */}
         <div className="lg:col-span-2">
-            <h2 className="text-2xl font-bold text-white border-l-4 border-orange-500 pl-4 mb-8">Lịch Chiếu</h2>
+            <h2 className="text-2xl font-bold text-white border-l-4 border-orange-500 pl-4 mb-6">Lịch Chiếu</h2>
 
             {showtimes.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 bg-slate-900/50 rounded-2xl border border-dashed border-slate-800">
                     <p className="text-slate-500">Chưa có lịch chiếu nào.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {showtimes.map((item) => (
-                        <div key={item._id} className="bg-slate-900 border border-slate-800 p-4 rounded-xl hover:border-orange-500/50 transition group flex flex-col justify-between">
-                            <div className="flex justify-between items-start mb-3">
-                                <div>
-                                    <h3 className="font-bold text-white">{item.room?.name}</h3>
-                                    <p className="text-xs text-slate-500 mt-1">{item.room?.type || 'Standard'}</p>
-                                </div>
-                                <span className="text-lg font-bold text-orange-400">{new Intl.NumberFormat('vi-VN').format(item.price)}đ</span>
-                            </div>
+                <>
+                    {/* 1. THANH CHỌN NGÀY */}
+                    <div className="flex gap-3 overflow-x-auto pb-4 mb-6 scrollbar-hide">
+                        {uniqueDates.map((date, index) => (
+                            <button
+                                key={index}
+                                onClick={() => setSelectedDate(date.fullDate)}
+                                className={`flex flex-col items-center justify-center min-w-[80px] px-2 py-3 rounded-xl border transition-all ${
+                                    selectedDate === date.fullDate
+                                        ? 'bg-orange-600 border-orange-500 text-white shadow-lg scale-105'
+                                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-white'
+                                }`}
+                            >
+                                <span className="text-xs font-bold uppercase">{date.dayName}</span>
+                                <span className="text-lg font-black">{date.dayNum}</span>
+                            </button>
+                        ))}
+                    </div>
 
-                            <div className="bg-slate-950 p-3 rounded-lg flex items-center justify-between mb-4 border border-slate-800/50">
-                                <div className="text-center">
-                                    <p className="text-[10px] text-slate-500 uppercase">Ngày</p>
-                                    <p className="font-bold text-slate-300 text-sm">{new Date(item.date).toLocaleDateString('vi-VN')}</p>
+                    {/* 2. DANH SÁCH RẠP & GIỜ */}
+                    <div className="space-y-6">
+                        {groupedShowtimes.map((group, idx) => (
+                            <div key={idx} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
+                                {/* Header Rạp */}
+                                <div className="flex items-center gap-3 border-b border-slate-800 pb-3 mb-4">
+                                    <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-orange-500">
+                                        <FaMapMarkerAlt />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-white text-lg">{group.roomName}</h3>
+                                        <div className="flex gap-2 text-xs">
+                                            <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">{group.screenType}</span>
+                                            <span className="bg-blue-900/30 text-blue-300 px-2 py-0.5 rounded border border-blue-800/50">{group.roomType}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="h-6 w-px bg-slate-800"></div>
-                                <div className="text-center">
-                                    <p className="text-[10px] text-slate-500 uppercase">Giờ</p>
-                                    <p className="font-bold text-white text-lg text-orange-500">{item.startTime}</p>
+
+                                {/* List Giờ */}
+                                <div className="flex flex-wrap gap-3">
+                                    {group.times.map((item) => (
+                                        // XÓA Link, thay bằng div hoặc Fragment
+                                        <div key={item._id}> 
+                                            <button 
+                                                onClick={() => handleTimeClick(item._id)} // Gọi hàm kiểm tra login
+                                                className="group relative bg-slate-800 hover:bg-orange-600 border border-slate-700 hover:border-orange-500 rounded-lg px-6 py-2 transition-all"
+                                            >
+                                                <p className="text-lg font-bold text-white group-hover:scale-110 transition-transform">
+                                                    {new Date(item.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}
+                                                </p>
+                                                <p className="text-[10px] text-slate-500 group-hover:text-orange-100 mt-1">
+                                                    {new Intl.NumberFormat('vi-VN').format(item.price || item.ticketPrice)}đ
+                                                </p>
+                                            </button>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-
-                            <Link href={`/booking/${item._id}`}>
-                                <button className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-2.5 rounded-lg transition shadow-lg shadow-orange-600/20 active:scale-95 text-sm uppercase">
-                                    Đặt Vé
-                                </button>
-                            </Link>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                        
+                        {groupedShowtimes.length === 0 && (
+                            <div className="text-center text-slate-500 py-8">
+                                Không có suất chiếu nào vào ngày này.
+                            </div>
+                        )}
+                    </div>
+                </>
             )}
 
             {/* Nội dung phim */}
@@ -156,7 +275,7 @@ const MovieBookingPage = () => {
             </div>
         </div>
 
-        {/* --- CỘT PHẢI: THÔNG TIN CHI TIẾT --- */}
+        {/* --- CỘT PHẢI: THÔNG TIN (Giữ nguyên) --- */}
         <div className="space-y-8">
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
@@ -164,7 +283,6 @@ const MovieBookingPage = () => {
                 </h3>
                 
                 <ul className="space-y-5">
-                    {/* Thêm mục Giới hạn độ tuổi */}
                     <li className="flex items-start gap-4 border-b border-slate-800 pb-4">
                         <div className={`w-10 h-10 rounded flex items-center justify-center text-white font-bold shrink-0 ${getAgeColor(movie.ageLimit)}`}>
                             {movie.ageLimit || 'P'}
@@ -174,13 +292,10 @@ const MovieBookingPage = () => {
                             <p className="text-white font-medium text-sm">
                                 {movie.ageLimit === 'T18' ? 'Cấm khán giả dưới 18 tuổi' : 
                                  movie.ageLimit === 'T16' ? 'Cấm khán giả dưới 16 tuổi' :
-                                 movie.ageLimit === 'T13' ? 'Cấm khán giả dưới 13 tuổi' :
-                                 movie.ageLimit === 'K' ? 'Dưới 13 tuổi cần người giám hộ' :
                                  'Phổ biến mọi lứa tuổi'}
                             </p>
                         </div>
                     </li>
-
                     <li className="flex items-start gap-4">
                         <div className="w-10 h-10 rounded bg-slate-800 flex items-center justify-center text-slate-400 shrink-0">
                             <FaUserSecret/>
@@ -226,8 +341,16 @@ const MovieBookingPage = () => {
                     </div>
                 </div>
             )}
-        </div>
 
+            <AuthModal 
+                isOpen={showLogin} 
+                onClose={() => setShowLogin(false)}
+                onLoginSuccess={(userData) => {
+                    setShowLogin(false);
+                    toast.success("Đăng nhập thành công! Hãy chọn lại suất chiếu.");
+                }}
+            />
+        </div>
       </div>
     </div>
   );

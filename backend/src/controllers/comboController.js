@@ -42,3 +42,14 @@ export const deleteCombo = async (req, res) => {
     res.status(500).json({ message: "Lỗi xóa combo" });
   }
 };
+
+// 4. Chỉnh sửa Combo
+export const updateCombo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Combo.findByIdAndUpdate(id);
+    res.status(200).json({ message: "Đã sửa combo" });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi sửa combo" });
+  }
+};
