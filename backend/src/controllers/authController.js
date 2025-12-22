@@ -40,6 +40,9 @@ export const login = async (req, res) => {
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng!" });
 
+        // Kiểm tra tài khoản có bị khóa không
+        if (user.isLocked) return res.status(403).json({ message: "Tài khoản của bạn đã bị khóa!" });
+
         // Kiểm tra mật khẩu
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: "Sai mật khẩu!" });
