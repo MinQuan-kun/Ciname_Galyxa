@@ -180,8 +180,8 @@ const RoomsPage = () => {
     <div className="min-h-screen bg-gray-900 p-6 text-gray-100 font-sans">
       <header className="mb-8 border-b border-gray-700 pb-4 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-orange-500 uppercase tracking-wide">
-            🎬 Quản lý Phòng Chiếu
+          <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
+            Quản lý Phòng Chiếu
           </h1>
           <p className="text-gray-400 text-sm mt-1">Thiết lập sơ đồ ghế và thông tin phòng chiếu phim.</p>
         </div>
