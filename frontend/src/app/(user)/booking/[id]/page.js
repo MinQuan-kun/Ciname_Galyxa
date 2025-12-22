@@ -28,6 +28,12 @@ const BookingPage = () => {
   const HOLD_TIME = 300;
   const [timeLeft, setTimeLeft] = useState(HOLD_TIME);
 
+  const suggestedCombos = useMemo(() => {
+    if (combos.length === 0) return [];
+    const hots = combos.filter(c => c.isHot);
+    return hots.length > 0 ? hots.slice(0, 2) : combos.slice(0, 2);
+  }, [combos]);
+
   useEffect(() => {
     if (selectedSeats.length > 0 && timeLeft > 0) {
       const timerId = setInterval(() => setTimeLeft((p) => p - 1), 1000);
@@ -383,26 +389,87 @@ const BookingPage = () => {
         </div>
       </div>
 
-      {/* POPUP UPSELL */}
-      {showUpsellModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-          <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-md shadow-2xl relative text-center">
-            <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center border-4 border-slate-900 shadow-xl">
-              <FaStar className="text-white text-3xl animate-spin-slow" />
+      {/* --- MODAL GỢI Ý COMBO (LIST VERSION) --- */}
+      {showUpsellModal && suggestedCombos.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-slate-900 w-full max-w-lg rounded-2xl p-6 border border-slate-700 shadow-2xl relative">
+            
+            <button 
+              onClick={() => { setShowUpsellModal(false); setCurrentStep(2); }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+            >
+              ✕
+            </button>
+
+            <div className="text-center mb-6">
+              <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600 uppercase">
+                🔥 Ưu đãi Hot hôm nay
+              </h3>
+              <p className="text-slate-400 text-sm mt-1">
+                Thêm ngay Combo để trải nghiệm điện ảnh trọn vẹn!
+              </p>
             </div>
-            <h3 className="text-2xl font-black text-white mt-8 uppercase">Gợi ý siêu hời!</h3>
-            <p className="text-slate-400 mt-2 text-sm">Combo "Best Seller" đang chờ bạn.</p>
-            {combos.length > 0 && (
-              <div className="mt-6 bg-slate-800 p-4 rounded-xl border border-slate-700">
-                <img src={combos[2].image || "https://via.placeholder.com/150"} alt="" className="w-full h-32 object-cover rounded-lg mb-3" />
-                <h4 className="font-bold text-lg text-white">{combos[2].name}</h4>
-                <p className="text-orange-500 font-bold text-xl">{new Intl.NumberFormat('vi-VN').format(combos[2].price)}đ</p>
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-3 mt-6">
-              <button onClick={() => { setShowUpsellModal(false); setCurrentStep(2); }} className="py-3 rounded-xl border border-slate-600 text-slate-300 hover:bg-slate-800 font-bold">Bỏ qua</button>
-              <button onClick={() => { if (combos.length > 0) handleComboChange(combos[2]._id, 1); setShowUpsellModal(false); setCurrentStep(2); }} className="py-3 rounded-xl bg-orange-600 text-white font-bold">Thêm ngay</button>
+
+            {/* DANH SÁCH COMBO GỢI Ý */}
+            <div className="space-y-3 mb-6 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
+              {suggestedCombos.map((combo) => {
+                // Kiểm tra xem combo này đã được chọn trong giỏ hàng chưa
+                const isSelected = selectedCombos[combo._id] > 0;
+
+                return (
+                  <div key={combo._id} className="bg-slate-800 p-3 rounded-xl border border-slate-700 flex gap-4 items-center group hover:border-orange-500/50 transition">
+                    {/* Ảnh */}
+                    <div className="relative w-20 h-20 flex-shrink-0">
+                      <img 
+                        src={combo.image || "https://via.placeholder.com/150"} 
+                        alt={combo.name} 
+                        className="w-full h-full object-cover rounded-lg" 
+                      />
+                      {combo.isHot && (
+                        <div className="absolute -top-2 -left-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md z-10">
+                          HOT
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Thông tin */}
+                    <div className="flex-1">
+                      <h4 className="font-bold text-white text-md line-clamp-1">{combo.name}</h4>
+                      <p className="text-xs text-gray-400 line-clamp-1 mb-1">{combo.items}</p>
+                      <p className="text-orange-400 font-bold">
+                        {new Intl.NumberFormat('vi-VN').format(combo.price)}đ
+                      </p>
+                    </div>
+
+                    {/* Nút Thêm/Đã thêm */}
+                    <button 
+                      onClick={() => {
+                        // Nếu chưa chọn thì thêm 1, nếu chọn rồi thì thôi (hoặc có thể làm logic cộng dồn)
+                        if (!isSelected) {
+                           handleComboChange(combo._id, 1);
+                           toast.success(`Đã thêm ${combo.name}`);
+                        }
+                      }} 
+                      className={`px-4 py-2 rounded-lg font-bold text-sm transition shadow-lg ${
+                        isSelected 
+                        ? 'bg-green-600 text-white cursor-default' 
+                        : 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-900/20'
+                      }`}
+                    >
+                      {isSelected ? <span className="flex items-center gap-1"><FaCheckCircle/> Đã chọn</span> : 'Thêm +'}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
+
+            {/* Nút điều hướng cuối cùng */}
+            <button 
+              onClick={() => { setShowUpsellModal(false); setCurrentStep(2); }} 
+              className="w-full py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold transition border border-slate-600"
+            >
+              Tiếp tục thanh toán ➔
+            </button>
           </div>
         </div>
       )}

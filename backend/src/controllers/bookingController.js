@@ -35,3 +35,19 @@ export const createBooking = async (req, res) => {
     res.status(500).json({ message: "Lỗi đặt vé: " + error.message });
   }
 };
+
+export const getMyBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.find({ userId: req.user.id })
+      .populate('showtimeId', 'startTime room') 
+      .populate({
+        path: 'showtimeId',
+        populate: { path: 'movieId', select: 'title poster' } 
+      })
+      .sort({ createdAt: -1 }); // Mới nhất lên đầu
+
+    res.status(200).json(bookings);
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi lấy lịch sử vé', error: error.message });
+  }
+};

@@ -1,300 +1,302 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
 import axiosClient from '@/api/axios';
 import { toast } from 'react-toastify';
-import { FaCamera, FaUserEdit, FaAward } from 'react-icons/fa';
+import { FaCamera, FaUser, FaHistory, FaStar, FaTicketAlt, FaCalendarAlt } from 'react-icons/fa';
 
 const ProfilePage = () => {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const userId = searchParams.get('userId');
-
   const [user, setUser] = useState(null);
+  const [bookings, setBookings] = useState([]); // State cho lịch sử vé
+  const [activeTab, setActiveTab] = useState('info'); // 'info' | 'history' | 'reviews'
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [canEdit, setCanEdit] = useState(true);
   
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: ''
-  });
+  // State cho edit info
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({});
   const [avatarPreview, setAvatarPreview] = useState('');
-  const [isUploading, setIsUploading] = useState(false); // Trạng thái đang upload ảnh
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (!storedUser && !userId) {
-      toast.warning('Vui lòng đăng nhập để xem hồ sơ');
-      router.push('/login');
-      return;
-    }
     fetchProfile();
-  }, [userId]);
+    fetchBookingHistory();
+  }, []);
 
   const fetchProfile = async () => {
     try {
-      setLoading(true);
-      const endpoint = userId ? `/users/${userId}` : '/users/profile';
-      const response = await axiosClient.get(endpoint);
-      
-      const userData = response.data;
-      setUser(userData);
-      
+      const res = await axiosClient.get('/users/profile');
+      setUser(res.data);
       setFormData({
-        name: userData.name || '',
-        email: userData.email || '',
-        phone: userData.phone || '',
-        password: '',
-        confirmPassword: ''
+        name: res.data.name,
+        phone: res.data.phone || '',
+        email: res.data.email
       });
-      setAvatarPreview(userData.avatar || '');
-      setCanEdit(!userId); 
+      setAvatarPreview(res.data.avatar);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Lỗi khi lấy thông tin người dùng.');
+      toast.error('Lỗi tải thông tin');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const fetchBookingHistory = async () => {
+    try {
+      const res = await axiosClient.get('/bookings/my-bookings'); // Cần tạo route này ở backend
+      setBookings(res.data);
+    } catch (error) {
+      console.log('Chưa có API history');
+    }
   };
 
-  /**
-   * LOGIC MỚI: THAY AVATAR LÀ LƯU NGAY
-   */
-  const handleAvatarChange = async (e) => {
+  const handleUpdateAvatar = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      return toast.error('Ảnh quá lớn (tối đa 2MB)');
-    }
-
-    // Hiển thị preview tạm thời
-    const reader = new FileReader();
-    reader.onload = () => setAvatarPreview(reader.result);
-    reader.readAsDataURL(file);
-
-    // Chuẩn bị dữ liệu gửi đi
-    const data = new FormData();
-    data.append('avatar', file);
-
+    const formData = new FormData();
+    formData.append('avatar', file);
     try {
-      setIsUploading(true);
-      toast.info('Đang tải ảnh đại diện lên...');
-      
-      // Gọi API PATCH riêng cho avatar (đã viết ở Controller trước)
-      const response = await axiosClient.patch('/users/profile', data, {
+      const res = await axiosClient.patch('/users/profile', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-
-      // Cập nhật State và LocalStorage ngay lập tức
-      const updatedUser = { ...user, avatar: response.data.avatar };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      
-      toast.success('Cập nhật ảnh đại diện thành công!');
-    } catch (error) {
-      toast.error('Lỗi khi tải ảnh lên server');
-      setAvatarPreview(user?.avatar || ''); // Trả về ảnh cũ nếu lỗi
-    } finally {
-      setIsUploading(false);
+      setUser({ ...user, avatar: res.data.avatar });
+      setAvatarPreview(res.data.avatar);
+      toast.success('Cập nhật avatar thành công');
+    } catch (err) {
+      toast.error('Lỗi upload ảnh');
     }
   };
 
-  const handleSave = async (e) => {
+  const handleUpdateInfo = async (e) => {
     e.preventDefault();
-    if (formData.password && formData.password !== formData.confirmPassword) {
-      return toast.error('Mật khẩu xác nhận không khớp');
-    }
 
-    // Ở đây không còn dùng FormData cho File nữa, chỉ gửi dữ liệu JSON thông thường
-    const updatePayload = {
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-    };
-    if (formData.password) updatePayload.password = formData.password;
+    // Kiểm tra mật khẩu xác nhận
+    if (formData.password || formData.confirmPassword) {
+      if (formData.password !== formData.confirmPassword) {
+        return toast.error('Mật khẩu xác nhận không khớp!');
+      }
+      if (formData.password.length < 6) {
+        return toast.error('Mật khẩu phải có ít nhất 6 ký tự!');
+      }
+    }
 
     try {
-      const response = await axiosClient.put('/users/profile', updatePayload);
-      setUser(response.data);
-      setEditing(false);
-      localStorage.setItem('user', JSON.stringify(response.data));
+      const payload = {
+        name: formData.name,
+        phone: formData.phone,
+        ...(formData.password && { password: formData.password }) 
+      };
+
+      const res = await axiosClient.put('/users/profile', payload);
+      setUser(res.data);
+      setIsEditing(false);
+      
+      setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
+      
       toast.success('Cập nhật thông tin thành công!');
-    } catch (error) {
-      toast.error('Không thể cập nhật hồ sơ');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Lỗi cập nhật');
     }
   };
 
-  const points = user?.points || 0;
-  const nextLevelPoints = 1000;
-  const progress = Math.min((points / nextLevelPoints) * 100, 100);
-
-  if (loading) return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-orange-500"></div>
-    </div>
-  );
+  if (loading) return <div className="min-h-screen bg-gray-900 flex justify-center items-center text-white">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-gray-100 p-4 md:p-8">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="h-8 w-2 bg-orange-500 rounded-full"></div>
-          <h1 className="text-3xl font-bold uppercase tracking-wider">Tài khoản Galaxy</h1>
-        </div>
+    <div className="min-h-screen bg-[#0b1121] text-gray-100 pt-20 pb-10 px-4">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* SIDEBAR TRÁI: AVATAR & MENU */}
+        <div className="lg:col-span-3">
+          <div className="bg-[#151f32] rounded-2xl p-6 border border-gray-700 shadow-xl text-center sticky top-24">
+            <div className="relative w-32 h-32 mx-auto mb-4 group">
+              <img 
+                src={avatarPreview || '/default-avatar.png'} 
+                className="w-full h-full rounded-full object-cover border-4 border-orange-500/50 shadow-lg"
+              />
+              <label className="absolute bottom-0 right-0 bg-gray-800 text-white p-2 rounded-full cursor-pointer hover:bg-orange-600 transition shadow-md border border-gray-600">
+                <FaCamera size={14} />
+                <input type="file" className="hidden" accept="image/*" onChange={handleUpdateAvatar} />
+              </label>
+            </div>
+            
+            <h2 className="text-xl font-bold text-white">{user.name}</h2>
+            <p className="text-sm text-gray-400 mb-6">{user.email}</p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          <div className="lg:col-span-4 space-y-6">
-            <div className="bg-[#1e293b] rounded-2xl p-6 border border-gray-700 shadow-2xl text-center">
-              <div className="relative w-32 h-32 mx-auto mb-4">
-                <div className={`relative w-full h-full rounded-full overflow-hidden border-4 border-gray-700 shadow-lg ${isUploading ? 'opacity-50' : ''}`}>
-                  <img
-                    src={avatarPreview || '/default-avatar.png'}
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                  />
-                  {isUploading && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Chỉ hiện nút đổi ảnh nếu là profile của mình */}
-                {canEdit && (
-                  <label className="absolute bottom-0 right-0 bg-orange-500 p-2 rounded-full cursor-pointer hover:scale-110 transition shadow-lg">
-                    <FaCamera size={16} />
-                    <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
-                  </label>
-                )}
-              </div>
-              <h2 className="text-xl font-bold">{user?.name}</h2>
-              <p className="text-orange-500 font-medium mb-4 italic">Thành viên Galaxy</p>
-
-              <div className="bg-[#0f172a] rounded-xl p-4 text-left border border-gray-800">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm flex items-center gap-2"><FaAward className="text-yellow-500"/> Điểm tích lũy</span>
-                  <span className="font-bold text-orange-400">{points}</span>
-                </div>
-                <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
-                  <div 
-                    className="bg-gradient-to-r from-orange-500 to-yellow-400 h-2 rounded-full transition-all duration-1000"
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
-                <p className="text-[10px] text-gray-400">Tích lũy thêm {nextLevelPoints - points} điểm để lên cấp.</p>
-              </div>
+            <div className="space-y-2">
+              <button 
+                onClick={() => setActiveTab('info')}
+                className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition ${activeTab === 'info' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50' : 'hover:bg-gray-700 text-gray-300'}`}
+              >
+                <FaUser /> Thông tin tài khoản
+              </button>
+              <button 
+                onClick={() => setActiveTab('history')}
+                className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition ${activeTab === 'history' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50' : 'hover:bg-gray-700 text-gray-300'}`}
+              >
+                <FaHistory /> Lịch sử vé
+              </button>
+              <button 
+                onClick={() => setActiveTab('reviews')}
+                className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition ${activeTab === 'reviews' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50' : 'hover:bg-gray-700 text-gray-300'}`}
+              >
+                <FaStar /> Đánh giá của tôi
+              </button>
             </div>
           </div>
+        </div>
 
-          <div className="lg:col-span-8">
-            <div className="bg-[#1e293b] rounded-2xl p-6 md:p-8 border border-gray-700 shadow-2xl">
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="text-xl font-semibold flex items-center gap-2">
-                  <FaUserEdit className="text-blue-400" /> Thông tin cá nhân
+        {/* NỘI DUNG CHÍNH */}
+        <div className="lg:col-span-9">
+          <div className="bg-[#151f32] rounded-2xl p-6 md:p-8 border border-gray-700 shadow-xl min-h-[500px]">
+            
+            {/* TAB: THÔNG TIN */}
+            {activeTab === 'info' && (
+              <div className="animate-fade-in">
+                <h3 className="text-2xl font-bold mb-6 border-b border-gray-700 pb-4 flex justify-between items-center">
+                  Hồ Sơ Cá Nhân
+                  {!isEditing && (
+                    <button 
+                      onClick={() => setIsEditing(true)} 
+                      className="text-sm bg-blue-600/20 text-blue-400 px-4 py-1.5 rounded-full hover:bg-blue-600 hover:text-white transition border border-blue-600/30"
+                    >
+                      Chỉnh sửa
+                    </button>
+                  )}
                 </h3>
-                {canEdit && !editing && (
-                  <button 
-                    onClick={() => setEditing(true)}
-                    className="text-sm bg-blue-600/20 text-blue-400 border border-blue-600/30 px-4 py-1.5 rounded-full hover:bg-blue-600 hover:text-white transition"
-                  >
-                    Chỉnh sửa
-                  </button>
-                )}
-              </div>
 
-              <form onSubmit={handleSave} className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <form onSubmit={handleUpdateInfo} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs text-gray-400 uppercase ml-1">Họ và tên</label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      disabled={!editing}
-                      className="w-full bg-[#0f172a] border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none transition disabled:opacity-60"
+                    <label className="text-gray-400 text-sm font-medium">Họ và tên</label>
+                    <input 
+                      type="text" 
+                      value={formData.name || ''} 
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      disabled={!isEditing}
+                      className="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none disabled:opacity-50 transition"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs text-gray-400 uppercase ml-1">Số điện thoại</label>
-                    <input
-                      type="text"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      disabled={!editing}
-                      className="w-full bg-[#0f172a] border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none transition disabled:opacity-60"
+                    <label className="text-gray-400 text-sm font-medium">Số điện thoại</label>
+                    <input 
+                      type="text" 
+                      value={formData.phone || ''} 
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      disabled={!isEditing}
+                      className="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none disabled:opacity-50 transition"
                     />
                   </div>
                   <div className="md:col-span-2 space-y-2">
-                    <label className="text-xs text-gray-400 uppercase ml-1">Email</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      disabled={!editing}
-                      className="w-full bg-[#0f172a] border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none transition disabled:opacity-60"
+                    <label className="text-gray-400 text-sm font-medium">Email (Không thể thay đổi)</label>
+                    <input 
+                      type="email" 
+                      value={formData.email || ''} 
+                      disabled
+                      className="w-full bg-gray-900/30 border border-gray-800 rounded-xl px-4 py-3 text-gray-500 cursor-not-allowed"
                     />
                   </div>
-                </div>
 
-                {editing && (
-                  <div className="pt-4 space-y-5">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-gray-700 pt-6">
+                  {/* PHẦN ĐỔI MẬT KHẨU - CHỈ HIỆN KHI EDIT */}
+                  {isEditing && (
+                    <>
+                      <div className="md:col-span-2 mt-4 border-t border-gray-700/50 pt-4">
+                        <p className="text-orange-500 text-sm mb-4 font-bold">Đổi mật khẩu (Bỏ trống nếu không muốn thay đổi)</p>
+                      </div>
                       <div className="space-y-2">
-                        <label className="text-xs text-gray-400 uppercase ml-1">Mật khẩu mới</label>
-                        <input
-                          type="password"
-                          name="password"
-                          placeholder="Bỏ trống nếu không đổi"
-                          value={formData.password}
-                          onChange={handleInputChange}
-                          className="w-full bg-[#0f172a] border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none"
+                        <label className="text-gray-400 text-sm font-medium">Mật khẩu mới</label>
+                        <input 
+                          type="password" 
+                          placeholder="Nhập mật khẩu mới..."
+                          value={formData.password || ''} 
+                          onChange={(e) => setFormData({...formData, password: e.target.value})}
+                          className="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none transition"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs text-gray-400 uppercase ml-1">Xác nhận mật khẩu</label>
-                        <input
-                          type="password"
-                          name="confirmPassword"
-                          value={formData.confirmPassword}
-                          onChange={handleInputChange}
-                          className="w-full bg-[#0f172a] border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none"
+                        <label className="text-gray-400 text-sm font-medium">Xác nhận mật khẩu</label>
+                        <input 
+                          type="password" 
+                          placeholder="Nhập lại mật khẩu..."
+                          value={formData.confirmPassword || ''} 
+                          onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                          className="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none transition"
                         />
                       </div>
-                    </div>
-                    
-                    <div className="flex justify-end gap-3 pt-4">
-                      <button
-                        type="button"
-                        onClick={() => { setEditing(false); fetchProfile(); }}
-                        className="px-6 py-2.5 rounded-xl font-medium text-gray-400 hover:bg-gray-800 transition"
+                    </>
+                  )}
+                  
+                  {isEditing && (
+                    <div className="md:col-span-2 flex justify-end gap-3 mt-6 pt-4 border-t border-gray-700">
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setIsEditing(false);
+                          setFormData({ // Reset lại form về dữ liệu gốc
+                            name: user.name,
+                            phone: user.phone,
+                            email: user.email,
+                            password: '',
+                            confirmPassword: ''
+                          });
+                        }} 
+                        className="px-6 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 transition font-medium"
                       >
                         Hủy bỏ
                       </button>
-                      <button
-                        type="submit"
-                        className="px-8 py-2.5 bg-orange-600 rounded-xl font-bold hover:bg-orange-500 transition shadow-lg shadow-orange-900/20"
+                      <button 
+                        type="submit" 
+                        className="px-8 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 font-bold shadow-lg shadow-orange-900/40 transition transform active:scale-95"
                       >
-                        Lưu thông tin
+                        Lưu thay đổi
                       </button>
                     </div>
-                  </div>
-                )}
-              </form>
-            </div>
+                  )}
+                </form>
+              </div>
+            )}
+
+            {/* TAB: LỊCH SỬ VÉ */}
+            {activeTab === 'history' && (
+              <div className="animate-fade-in">
+                 <h3 className="text-2xl font-bold mb-6 border-b border-gray-700 pb-4">Lịch Sử Xem Phim</h3>
+                 {bookings.length === 0 ? (
+                   <p className="text-gray-400 text-center py-10">Bạn chưa đặt vé nào.</p>
+                 ) : (
+                   <div className="space-y-4">
+                     {bookings.map((booking) => (
+                       <div key={booking._id} className="bg-gray-900/50 p-4 rounded-xl border border-gray-700 flex gap-4 hover:border-orange-500/50 transition">
+                         <img 
+                            src={booking.showtimeId?.movieId?.poster || '/placeholder.jpg'} 
+                            className="w-20 h-28 object-cover rounded-lg shadow-md"
+                         />
+                         <div className="flex-1">
+                           <h4 className="text-lg font-bold text-orange-400">{booking.showtimeId?.movieId?.title}</h4>
+                           <div className="text-sm text-gray-400 mt-1 flex flex-col gap-1">
+                              <p className="flex items-center gap-2"><FaCalendarAlt /> {new Date(booking.showtimeId?.startTime).toLocaleString('vi-VN')}</p>
+                              <p className="flex items-center gap-2"><FaTicketAlt /> Ghế: {booking.seats.join(', ')}</p>
+                              <p>Rạp: {booking.showtimeId?.room?.name}</p>
+                           </div>
+                         </div>
+                         <div className="text-right">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              booking.status === 'confirmed' ? 'bg-green-900 text-green-400' : 'bg-yellow-900 text-yellow-400'
+                            }`}>
+                              {booking.status === 'confirmed' ? 'Thành công' : 'Đang xử lý'}
+                            </span>
+                            <p className="mt-2 font-bold text-xl">{booking.totalPrice.toLocaleString()} đ</p>
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 )}
+              </div>
+            )}
+
+            {/* TAB: ĐÁNH GIÁ (Placeholder) */}
+            {activeTab === 'reviews' && (
+              <div className="animate-fade-in text-center py-10">
+                <FaStar className="mx-auto text-yellow-500 text-5xl mb-4" />
+                <h3 className="text-xl font-bold">Tính năng đang phát triển</h3>
+                <p className="text-gray-400 mt-2">Danh sách các bài đánh giá phim của bạn sẽ hiển thị ở đây.</p>
+              </div>
+            )}
+            
           </div>
         </div>
       </div>

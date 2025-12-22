@@ -1,55 +1,90 @@
 import Combo from '../models/Combo.js';
 
-// 1. Lấy danh sách Combo
+// 1. Lấy tất cả combo
 export const getCombos = async (req, res) => {
   try {
     const combos = await Combo.find();
     res.status(200).json(combos);
   } catch (error) {
-    res.status(500).json({ message: "Lỗi lấy danh sách combo" });
+    res.status(500).json({ message: 'Lỗi khi lấy danh sách combo', error: error.message });
   }
 };
 
-// 2. Tạo Combo mới (Có upload ảnh)
+// 2. Lấy combo theo ID
+export const getComboById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const combo = await Combo.findById(id);
+    if (!combo) return res.status(404).json({ message: 'Không tìm thấy combo' });
+    res.status(200).json(combo);
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi lấy thông tin combo', error: error.message });
+  }
+};
+
+// 3. Tạo Combo mới 
 export const createCombo = async (req, res) => {
   try {
-    const { name, price, items } = req.body;
+    // Lấy dữ liệu từ form-data
+    const { name, price, items, description, isHot } = req.body;
     
-    // Xử lý ảnh (Nếu dùng Cloudinary/Multer)
+    // Xử lý ảnh: Nếu có file thì lấy path, không thì để rỗng
     const imagePath = req.file ? req.file.path : ""; 
 
     const newCombo = new Combo({
       name,
       price,
       items,
-      image: imagePath
+      description,
+      image: imagePath,
+      isHot: isHot === 'true' || isHot === true 
     });
 
     await newCombo.save();
     res.status(201).json(newCombo);
   } catch (error) {
-    res.status(500).json({ message: "Lỗi tạo combo: " + error.message });
+    res.status(500).json({ message: "Lỗi tạo combo", error: error.message });
   }
 };
 
-// 3. Xóa Combo
+// 4. Cập nhật combo
+export const updateCombo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, price, items, description, isHot } = req.body;
+
+    const updates = {
+      name,
+      price,
+      items,
+      description,
+      isHot: isHot === 'true' || isHot === true
+    };
+
+    if (req.file) {
+      updates.image = req.file.path;
+    }
+
+    const updatedCombo = await Combo.findByIdAndUpdate(id, updates, { new: true });
+
+    if (!updatedCombo) {
+      return res.status(404).json({ message: "Không tìm thấy Combo để sửa" });
+    }
+
+    res.status(200).json(updatedCombo);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Lỗi sửa combo", error: error.message });
+  }
+};
+
+// 5. Xóa combo
 export const deleteCombo = async (req, res) => {
   try {
     const { id } = req.params;
     await Combo.findByIdAndDelete(id);
-    res.status(200).json({ message: "Đã xóa combo" });
+    res.status(200).json({ message: 'Đã xóa combo' });
   } catch (error) {
-    res.status(500).json({ message: "Lỗi xóa combo" });
-  }
-};
-
-// 4. Chỉnh sửa Combo
-export const updateCombo = async (req, res) => {
-  try {
-    const { id } = req.params;
-    await Combo.findByIdAndUpdate(id);
-    res.status(200).json({ message: "Đã sửa combo" });
-  } catch (error) {
-    res.status(500).json({ message: "Lỗi sửa combo" });
+    res.status(500).json({ message: 'Lỗi xóa combo', error: error.message });
   }
 };
