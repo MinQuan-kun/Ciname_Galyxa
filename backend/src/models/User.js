@@ -6,9 +6,10 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   phone: { type: String },
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
-  
   points: { type: Number, default: 0 },
-  
+  avatar: { type: String, default: '' },
+  isActive: { type: Boolean, default: true }
+
 }, { timestamps: true });
 
 export default mongoose.model('User', userSchema);
