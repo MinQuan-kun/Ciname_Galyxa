@@ -14,7 +14,7 @@ const CombosPage = () => {
   // State form
   const [formData, setFormData] = useState({
     name: '',
-    items: '', // <-- Bổ sung trường items
+    items: '',
     description: '',
     price: '',
     isHot: false,
@@ -42,7 +42,7 @@ const CombosPage = () => {
       setCurrentCombo(combo);
       setFormData({
         name: combo.name,
-        items: combo.items || '', // <-- Lấy dữ liệu items cũ
+        items: combo.items || '',
         description: combo.description || '',
         price: combo.price,
         isHot: combo.isHot || false,
@@ -53,7 +53,7 @@ const CombosPage = () => {
       setCurrentCombo(null);
       setFormData({
         name: '',
-        items: '', // <-- Reset items
+        items: '',
         description: '',
         price: '',
         isHot: false,
@@ -261,20 +261,36 @@ const CombosPage = () => {
               <div>
                 <label className="block text-sm text-gray-400 mb-2">Hình ảnh</label>
                 <div className="flex items-center gap-4">
-                    <div className="w-20 h-20 bg-gray-700 rounded-lg overflow-hidden border border-gray-600 flex-shrink-0">
+                    {/* Khung Preview Ảnh */}
+                    <div className="w-20 h-20 bg-gray-700 rounded-lg overflow-hidden border border-gray-600 flex-shrink-0 relative group">
                         {imagePreview ? (
-                            <img src={imagePreview} className="w-full h-full object-cover" />
+                            <img src={imagePreview} className="w-full h-full object-cover" alt="Preview" />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-500"><FaImage size={24}/></div>
+                            <div className="w-full h-full flex items-center justify-center text-gray-500">
+                                <FaImage size={24}/>
+                            </div>
                         )}
                     </div>
+
+                    {/* Nút Chọn Ảnh  */}
                     <div className="flex-1">
-                        <input 
-                            type="file" 
-                            accept="image/*"
-                            onChange={handleInputChange}
-                            className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-600 file:text-white hover:file:bg-orange-500 cursor-pointer"
-                        />
+                        <label className="cursor-pointer inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg font-bold transition shadow-md">
+                            <FaImage /> 
+                            <span>Chọn ảnh</span>
+                            <input 
+                                type="file" 
+                                accept="image/*"
+                                onChange={handleInputChange}
+                                className="hidden"
+                            />
+                        </label>
+                        
+                        {formData.image && formData.image.name && (
+                           <p className="text-sm text-white mt-1 truncate max-w-[200px]">
+                             📁 {formData.image.name}
+                           </p>
+                        )}
+
                         <p className="text-xs text-gray-500 mt-1">Hỗ trợ: JPG, PNG, WEBP (Max 5MB)</p>
                     </div>
                 </div>
