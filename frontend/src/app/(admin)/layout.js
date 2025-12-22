@@ -1,4 +1,4 @@
-import Sidebar from '@/components/admin/Sidebar'; 
+import AdminLayoutClient from '@/components/admin/AdminLayoutClient'; // Import component mới tạo ở Bước 1
 
 export const metadata = {
   title: 'Admin Dashboard - Ciname Galyxa',
@@ -7,15 +7,9 @@ export const metadata = {
 
 export default function AdminLayout({ children }) {
   return (
-    <div className="min-h-screen bg-slate-900 text-white relative">
-      {/* 1. Sidebar cố định bên trái */}
-      <Sidebar />
-
-      {/* 2. Phần nội dung chính (Children) */}
-      {/* ml-64 để né sidebar, w-full để chiếm hết phần còn lại */}
-      <main className="ml-64 p-8 transition-all duration-300">
-        {children}
-      </main>
-    </div>
+    // Toàn bộ logic giao diện được chuyển sang Client Component
+    <AdminLayoutClient>
+      {children}
+    </AdminLayoutClient>
   );
 }
