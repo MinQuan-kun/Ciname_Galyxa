@@ -186,8 +186,8 @@ const ShowtimesPage = () => {
       {/* HEADER */}
       <header className="mb-8 border-b border-gray-700 pb-4 flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-orange-500 uppercase tracking-wide">
-            📅 Quản lý Lịch Chiếu
+          <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
+            Quản lý Lịch Chiếu
           </h1>
           <p className="text-gray-400 text-sm mt-1">Sắp xếp thời gian chiếu phim cho từng rạp.</p>
         </div>

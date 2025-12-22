@@ -86,8 +86,8 @@ const CombosPage = () => {
             {/* HEADER */}
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 uppercase drop-shadow-sm">
-                        QUẢN LÝ DỊCH VỤ & COMBO
+                    <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 drop-shadow-sm">
+                        Quản lý Dịch vụ & Combo
                     </h1>
                     <p className="text-slate-400 text-sm mt-1">Thiết lập các gói bắp nước bán kèm</p>
                 </div>
