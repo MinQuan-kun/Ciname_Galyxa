@@ -143,15 +143,16 @@ const RoomsPage = () => {
   // --- LOGIC UI GHẾ ---
   const generateMatrix = () => {
     const newMap = [];
-    const rowLabels = ['A','B','C','D','E','F','G','H','J','K','L','M','N','O'];
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; // Bảng chữ cái
     
     for (let r = 0; r < formData.rows; r++) {
+      const rowLabel = r < alphabet.length ? alphabet[r] : `R${r + 1}`; 
+      
       for (let c = 1; c <= formData.cols; c++) {
-        const rowLabel = rowLabels[r] || `R${r+1}`; 
         newMap.push({
-          id: `${rowLabel}${c}`,
-          row: rowLabel,
-          number: c,
+          id: `${rowLabel}${c}`, // ID: A1, A2...
+          row: rowLabel,         // Hàng: A
+          number: c,             // Số: 1
           type: 'Standard', 
           priceSurcharge: 0
         });
@@ -261,34 +262,54 @@ const RoomsPage = () => {
           </div>
 
           {/* SƠ ĐỒ GHẾ */}
-          <div className="border border-gray-700 rounded-xl p-6 bg-gray-900/50 overflow-hidden relative">
-             <div className="flex gap-4 mb-8 justify-center text-sm bg-gray-800 py-2 px-4 rounded-full w-fit mx-auto border border-gray-700">
+          <div className="border border-gray-700 rounded-xl p-4 bg-gray-900/50 overflow-hidden relative shadow-inner">
+             
+             {/* CHÚ THÍCH (Thu nhỏ padding 1 chút cho gọn) */}
+             <div className="flex gap-4 mb-6 justify-center text-xs bg-gray-800 py-1.5 px-4 rounded-full w-fit mx-auto border border-gray-700">
                 {Object.entries(SEAT_TYPES).map(([key, val]) => (
-                  <div key={key} className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${val.color} shadow-sm`}></div>
-                    <span className="text-gray-300 text-xs">{val.label}</span>
+                  <div key={key} className="flex items-center gap-1.5">
+                    <div className={`w-2.5 h-2.5 rounded-sm ${val.color} shadow-sm`}></div>
+                    <span className="text-gray-400">{val.label}</span>
                   </div>
                 ))}
             </div>
 
-            <div className="flex flex-col items-center">
-                <div className="w-2/3 bg-gray-700 h-1 mb-12 rounded-full shadow-[0_10px_20px_rgba(255,255,255,0.1)] relative">
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] text-gray-500 tracking-[0.2em] uppercase">Màn hình (Screen)</span>
+            <div className="flex flex-col items-center w-full overflow-x-auto">
+                {/* MÀN HÌNH (SCREEN) */}
+                <div className="w-1/2 bg-gradient-to-b from-gray-700 to-transparent h-6 mb-8 rounded-t-[50%] opacity-50 relative shadow-[0_-5px_20px_rgba(255,255,255,0.1)] border-t border-gray-600">
+                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 tracking-[0.2em] uppercase font-bold">Màn hình</span>
                 </div>
                 
-                <div className="flex flex-col gap-2 overflow-x-auto w-full items-center pb-4 scrollbar-thin scrollbar-thumb-orange-500/30">
-                    {seatMap.length === 0 && <p className="text-gray-600 italic text-sm">Chưa có ghế nào.</p>}
+                {/* LƯỚI GHẾ */}
+                <div className="flex flex-col gap-1.5 min-w-max pb-4 px-4">
+                    {seatMap.length === 0 && <p className="text-gray-600 italic text-xs">Chưa có ghế nào.</p>}
+                    
                     {[...new Set(seatMap.map(s => s.row))].map(rowLabel => (
                     <div key={rowLabel} className="flex items-center justify-center gap-1.5">
-                        <span className="w-5 text-gray-500 font-bold text-center text-[10px]">{rowLabel}</span>
+                        
+                        {/* Loop qua các ghế */}
                         {seatMap.filter(s => s.row === rowLabel).map(seat => (
                         <div key={seat.id} onClick={() => toggleSeatType(seat.id)} 
-                            className={`w-7 h-7 rounded-t-sm flex items-center justify-center text-[9px] cursor-pointer font-bold select-none transition-all duration-200
+                            className={`
+                            /* --- ĐIỀU CHỈNH SIZE TẠI ĐÂY --- */
+                            w-7 h-7                 /* Kích thước: 28px */
+                            text-[9px]              /* Cỡ chữ nhỏ */
+                            rounded                 /* Bo góc nhẹ */
+                            /* ------------------------------- */
+                            
+                            flex items-center justify-center cursor-pointer font-bold select-none transition-all duration-150 border border-white/5
                             ${SEAT_TYPES[seat.type]?.color || 'bg-gray-700'} 
+                            
+                            /* Ghế đôi: (28px * 2) + gap 6px = ~62px */
                             ${seat.type === 'Couple' ? 'w-[62px]' : ''} 
-                            hover:brightness-125 hover:scale-105 shadow-sm text-white/90`} 
-                            title={`Ghế ${seat.id}`}>
-                            {seat.type !== '_HIDDEN' && seat.number}
+                            
+                            hover:brightness-125 hover:scale-105 shadow-sm text-white/90
+                            `} 
+                            title={`Ghế ${seat.id} - ${seat.type}`}>
+                            
+                            {/* Hiển thị ID ghế (A1, A2...) */}
+                            {seat.type !== '_HIDDEN' && seat.id}
+                            
                         </div>
                         ))}
                     </div>
