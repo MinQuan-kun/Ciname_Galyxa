@@ -148,7 +148,7 @@ const Banner = () => {
                                     {/* Buttons */}
                                     <div className="flex flex-wrap gap-4 pt-2">
                                         
-                                        {/* --- 3. [UPDATE] LOGIC HIỂN THỊ NÚT ĐẶT VÉ --- */}
+                                        {/* --- 3. LOGIC HIỂN THỊ NÚT ĐẶT VÉ --- */}
                                         {/* Hiện nút khi: (Đang chiếu) HOẶC (Sắp chiếu NHƯNG đã có lịch) */}
                                         {(movie.status === 'Đang chiếu' || (movie.status === 'Sắp chiếu' && movie.hasShowtimes)) && (
                                             <Link href={`/booking/movie/${movie._id}`} className="group">

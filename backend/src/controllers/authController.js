@@ -55,13 +55,21 @@ export const login = async (req, res) => {
         // Lưu token vào Cookie
         res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production", 
+            secure: process.env.NODE_ENV === "production",
             sameSite: "strict"
-        }).status(200).json({ 
-            message: "Đăng nhập thành công!", 
-            user: { id: user._id, name: user.name, role: user.role } 
+        }).status(200).json({
+            message: "Đăng nhập thành công!",
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                avatar: user.avatar,
+                points: user.points
+            }
         });
-            
+
 
     } catch (error) {
         res.status(500).json({ message: "Lỗi server: " + error.message });

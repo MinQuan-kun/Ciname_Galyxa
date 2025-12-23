@@ -29,14 +29,15 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { name: 'Quản lý Phim', path: '/admin/movies', icon: <FaFilm /> },
     { name: 'Lịch chiếu', path: '/admin/showtimes', icon: <FaClock/> },
     { name: 'Phòng chiếu', path: '/admin/rooms', icon: <FaVideo/> },
-    { name: 'Dịch vụ & KM', path: '/admin/combos', icon: <FaGift /> }, // Đã viết tắt tên cho gọn
+    { name: 'Dịch vụ & KM', path: '/admin/combos', icon: <FaGift /> },
     { name: 'Người dùng', path: '/admin/users', icon: <FaUsers /> },
+    { name: 'Giao diện người dùng', path: '/', icon: <FaUsers /> },
   ];
 
   return (
     <>
       {/* SIDEBAR CHÍNH */}
-      {/* - w-60: Đã thu nhỏ lại (cũ là w-64)
+      {/* - w-60: Đã thu nhỏ lại
          - translate-x: Logic trượt ra/vào
       */}
       <div 
@@ -96,7 +97,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </div>
       </div>
 
-      {/* OVERLAY (Lớp phủ mờ khi mở menu trên mobile - Tùy chọn) */}
+      {/* OVERLAY */}
       {isOpen && (
         <div 
             onClick={toggleSidebar}

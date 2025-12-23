@@ -75,10 +75,6 @@ const AuthModal = ({ isOpen, onClose, initialTab }) => {
         switchTab('login');
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Có lỗi xảy ra!"); 
-      toast.error(`❌ ${msg}`, {
-        position: "top-center"
-      });
     } finally {
       setLoading(false);
     }
