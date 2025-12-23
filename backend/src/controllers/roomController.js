@@ -1,6 +1,7 @@
 // Minh hoàng
 // Bổ sung thêm logic cho các controller chính
 import Room from '../models/Room.js';
+import Showtime from '../models/Showtime.js';
 
 // 1. Lấy tất cả phòng
 export const getRooms = async (req, res) => {
@@ -71,19 +72,27 @@ export const updateRoom = async (req, res) => {
   }
 };
 
-// 4. Xóa phòng
+// 4. Xóa phòng và Xóa luôn lịch chiếu liên quan
 export const deleteRoom = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Tìm và xóa phòng theo ID
+    // 1. Tìm và xóa phòng theo ID
     const deletedRoom = await Room.findByIdAndDelete(id);
 
     if (!deletedRoom) {
       return res.status(404).json({ message: 'Không tìm thấy phòng để xóa' });
     }
 
-    res.status(200).json({ message: 'Đã xóa phòng thành công' });
+    // 2. Xóa TẤT CẢ lịch chiếu liên quan đến phòng này
+    // Dùng deleteMany để xóa hàng loạt các showtime có roomId trùng khớp
+    const deleteResult = await Showtime.deleteMany({ roomId: id });
+
+    res.status(200).json({ 
+      message: `Đã xóa phòng và ${deleteResult.deletedCount} lịch chiếu liên quan thành công!`,
+      deletedShowtimes: deleteResult.deletedCount
+    });
+
   } catch (error) {
     res.status(500).json({ message: 'Lỗi khi xóa phòng', error: error.message });
   }

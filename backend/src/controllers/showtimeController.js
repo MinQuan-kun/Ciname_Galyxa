@@ -196,3 +196,53 @@ export const getShowtimeById = async (req, res) => {
     res.status(500).json({ message: "Lỗi server: " + error.message });
   }
 };
+
+// 5. Lấy TẤT CẢ lịch chiếu, nhóm theo Phim (Sắp xếp tên phim A->Z)
+export const getAllShowtimes = async (req, res) => {
+  try {
+    // Bước 1: Lấy tất cả suất chiếu, populate thông tin Phim và Phòng
+    // Sắp xếp suất chiếu theo thời gian tăng dần để hiển thị đẹp hơn
+    const showtimes = await Showtime.find()
+      .populate('movieId', 'title duration poster') // Lấy tên, thời lượng, ảnh phim
+      .populate('roomId', 'name type')              // Lấy tên, loại phòng
+      .sort({ startTime: 1 });
+
+    // Bước 2: Nhóm suất chiếu theo ID phim
+    const showtimesByMovie = {};
+
+    showtimes.forEach((show) => {
+      // Bỏ qua nếu dữ liệu phim bị lỗi hoặc phim đã bị xóa
+      if (!show.movieId) return;
+
+      const movieId = show.movieId._id.toString();
+
+      // Nếu phim này chưa có trong danh sách nhóm, thì khởi tạo
+      if (!showtimesByMovie[movieId]) {
+        showtimesByMovie[movieId] = {
+          movie: show.movieId, // Thông tin phim
+          showtimes: []        // Danh sách suất chiếu của phim này
+        };
+      }
+
+      // Thêm suất chiếu vào danh sách của phim
+      showtimesByMovie[movieId].showtimes.push({
+        _id: show._id,
+        roomId: show.roomId,
+        startTime: show.startTime,
+        ticketPrice: show.ticketPrice,
+        bookedSeats: show.bookedSeats
+      });
+    });
+
+    // Bước 3: Chuyển từ Object sang Array để sắp xếp
+    const result = Object.values(showtimesByMovie);
+
+    // Bước 4: Sắp xếp danh sách phim theo tên từ A -> Z
+    result.sort((a, b) => a.movie.title.localeCompare(b.movie.title));
+
+    res.status(200).json(result);
+
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi lấy danh sách tổng hợp: " + error.message });
+  }
+};
