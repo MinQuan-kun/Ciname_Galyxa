@@ -35,7 +35,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
   const menuItems = [
     { 
-      name: 'Dashboard', 
+      name: 'Thống kê', 
       path: '/admin', 
       icon: <FaTachometerAlt /> 
     },

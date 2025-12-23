@@ -13,7 +13,7 @@ import roomRoutes from './routes/RoomRoutes.js';
 import userRoutes from './routes/UserRoutes.js';
 import comboRoutes from './routes/ComboRoutes.js';
 import bookingRoutes from './routes/BookingRoutes.js';
-
+import statsRoutes from './routes/statsRoutes.js';
 dotenv.config();
 
 // Khởi tạo app
@@ -44,7 +44,7 @@ app.use('/api/rooms', roomRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/combos', comboRoutes);
 app.use('/api/bookings', bookingRoutes);
-
+app.use('/api/stats', statsRoutes);
 // Route mặc định
 app.get('/', (req, res) => {
     res.send('API Rạp Chiếu Phim Bất Ổn đang chạy... 🚀');
