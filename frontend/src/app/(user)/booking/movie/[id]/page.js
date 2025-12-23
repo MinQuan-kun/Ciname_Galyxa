@@ -131,16 +131,17 @@ const MovieBookingPage = () => {
         const now = new Date();
         const showtimeStart = new Date(showtime.startTime);
 
-        // Nếu thời gian hiện tại lớn hơn hoặc bằng giờ chiếu -> Chặn
-        if (now >= showtimeStart) {
-            toast.warning("Suất chiếu này đã bắt đầu hoặc kết thúc. Vui lòng chọn suất khác!", {
+        // Tính thời gian đóng
+        const closeBookingTime = new Date(showtimeStart.getTime() - 10 * 60000);
+
+        // Nếu hiện tại lớn hơn hoặc bằng thời gian đóng cửa -> Chặn
+        if (now >= closeBookingTime) {
+            toast.warning("Đã hết thời gian đặt vé (hệ thống đóng trước giờ chiếu 10 phút). Vui lòng chọn suất khác!", {
                 position: "top-center",
                 autoClose: 3000
             });
             return;
         }
-
-
 
         // --- KIỂM TRA ĐĂNG NHẬP  ---
         const user = localStorage.getItem('user');
@@ -221,8 +222,8 @@ const MovieBookingPage = () => {
                                         key={index}
                                         onClick={() => setSelectedDate(date.fullDate)}
                                         className={`flex flex-col items-center justify-center min-w-[80px] px-2 py-3 rounded-xl border transition-all ${selectedDate === date.fullDate
-                                                ? 'bg-orange-600 border-orange-500 text-white shadow-lg scale-105'
-                                                : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-white'
+                                            ? 'bg-orange-600 border-orange-500 text-white shadow-lg scale-105'
+                                            : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-white'
                                             }`}
                                     >
                                         <span className="text-xs font-bold uppercase">{date.dayName}</span>
@@ -252,26 +253,28 @@ const MovieBookingPage = () => {
                                         {/* List Giờ */}
                                         <div className="flex flex-wrap gap-3">
                                             {group.times.map((item) => {
-                                                // 1. Kiểm tra điều kiện 1 lần duy nhất
-                                                const isPast = new Date() >= new Date(item.startTime);
+                                                const now = new Date();
+                                                const showTimeDate = new Date(item.startTime);
+                                                const closeBookingTime = new Date(showTimeDate.getTime() - 10 * 60000);
+                                                const isBookingClosed = now >= closeBookingTime;
 
                                                 return (
                                                     <button
                                                         key={item._id}
-                                                        disabled={isPast} // Chặn click triệt để
+                                                        disabled={isBookingClosed} // Disable nếu quá hạn
                                                         onClick={() => handleTimeClick(item)}
-                                                        className={`group relative px-6 py-2 rounded-lg border transition-all ${isPast
-                                                                ? 'bg-slate-800 border-slate-700 opacity-50 cursor-not-allowed grayscale' // Style khi quá giờ
-                                                                : 'bg-slate-800 border-slate-700 hover:bg-orange-600 hover:border-orange-500' // Style hoạt động
+                                                        className={`group relative px-6 py-2 rounded-lg border transition-all ${isBookingClosed
+                                                            ? 'bg-slate-800 border-slate-700 opacity-50 cursor-not-allowed grayscale' // Style khi đóng đặt vé
+                                                            : 'bg-slate-800 border-slate-700 hover:bg-orange-600 hover:border-orange-500' // Style hoạt động
                                                             }`}
                                                     >
                                                         {/* Giờ chiếu */}
-                                                        <p className={`text-lg font-bold text-white transition-transform ${!isPast && 'group-hover:scale-110'}`}>
+                                                        <p className={`text-lg font-bold text-white transition-transform ${!isBookingClosed && 'group-hover:scale-110'}`}>
                                                             {new Date(item.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                                                         </p>
 
                                                         {/* Giá vé */}
-                                                        <p className={`text-[10px] mt-1 ${!isPast ? 'text-slate-500 group-hover:text-orange-100' : 'text-slate-600'}`}>
+                                                        <p className={`text-[10px] mt-1 ${!isBookingClosed ? 'text-slate-500 group-hover:text-orange-100' : 'text-slate-600'}`}>
                                                             {new Intl.NumberFormat('vi-VN').format(item.price || item.ticketPrice || 0)}đ
                                                         </p>
                                                     </button>
