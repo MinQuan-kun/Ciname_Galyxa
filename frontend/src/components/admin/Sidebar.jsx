@@ -3,8 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-// Import thêm icon FaBars (3 gạch) và FaTimes (Dấu X)
-import { FaFilm, FaUsers, FaChartBar, FaSignOutAlt, FaGift, FaClock, FaVideo, FaBars, FaTimes } from 'react-icons/fa';
+import { FaFilm, FaUsers, FaChartBar, FaSignOutAlt, FaGift, FaClock, FaVideo, FaTimes } from 'react-icons/fa';
 import axiosClient from '../../api/axios';
 import { toast } from 'react-toastify';
 
@@ -37,9 +36,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   return (
     <>
       {/* SIDEBAR CHÍNH */}
-      {/* - w-60: Đã thu nhỏ lại
-         - translate-x: Logic trượt ra/vào
-      */}
       <div 
         className={`fixed left-0 top-0 h-screen bg-slate-900 text-white shadow-2xl border-r border-slate-700 z-50 flex flex-col transition-transform duration-300 ease-in-out w-60 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
@@ -70,6 +66,10 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 <li key={item.path}>
                   <Link 
                     href={item.path} 
+                    // --- THÊM DÒNG NÀY ---
+                    // Khi click vào link -> gọi toggleSidebar để đóng menu
+                    onClick={toggleSidebar} 
+                    // ---------------------
                     className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all font-medium text-sm ${
                       isActive 
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
