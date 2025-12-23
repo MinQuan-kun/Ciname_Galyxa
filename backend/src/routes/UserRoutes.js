@@ -5,7 +5,8 @@ import {
     deleteUser, 
     updateProfile, 
     getProfile, 
-    getUserById 
+    getUserById,
+    updateAvatar
 } from '../controllers/UserController.js';
 import { verifyToken, isAdmin } from '../middleware/authMiddleware.js';
 import { upload } from '../config/cloudinary.js';
@@ -21,7 +22,7 @@ router.get('/profile', verifyToken, getProfile);
 
 // Cập nhật thông tin cá nhân & Avatar
 router.put('/profile', verifyToken, upload.single('avatar'), updateProfile);
-
+router.patch('/profile/avatar', verifyToken, upload.single('avatar'), updateAvatar);
 
 // ==========================================
 // 2. DÀNH CHO ADMIN (Quản lý)

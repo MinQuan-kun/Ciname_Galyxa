@@ -3,7 +3,17 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FaFilm, FaUsers, FaChartBar, FaSignOutAlt, FaGift, FaClock, FaVideo, FaTimes } from 'react-icons/fa';
+import { 
+  FaTachometerAlt,
+  FaFilm,         
+  FaCalendarAlt,   
+  FaCouch,         
+  FaHamburger,     
+  FaUserCog,       
+  FaGlobe,         
+  FaSignOutAlt,
+  FaTimes   
+} from 'react-icons/fa';
 import axiosClient from '../../api/axios';
 import { toast } from 'react-toastify';
 
@@ -24,15 +34,42 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   };
 
   const menuItems = [
-    { name: 'Dashboard', path: '/admin', icon: <FaChartBar /> },
-    { name: 'Quản lý Phim', path: '/admin/movies', icon: <FaFilm /> },
-    { name: 'Lịch chiếu', path: '/admin/showtimes', icon: <FaClock/> },
-    { name: 'Phòng chiếu', path: '/admin/rooms', icon: <FaVideo/> },
-    { name: 'Dịch vụ & KM', path: '/admin/combos', icon: <FaGift /> },
-    { name: 'Người dùng', path: '/admin/users', icon: <FaUsers /> },
-    { name: 'Giao diện người dùng', path: '/', icon: <FaUsers /> },
+    { 
+      name: 'Dashboard', 
+      path: '/admin', 
+      icon: <FaTachometerAlt /> 
+    },
+    { 
+      name: 'Quản lý Phim', 
+      path: '/admin/movies', 
+      icon: <FaFilm /> 
+    },
+    { 
+      name: 'Lịch chiếu', 
+      path: '/admin/showtimes', 
+      icon: <FaCalendarAlt /> 
+    },
+    { 
+      name: 'Phòng chiếu', 
+      path: '/admin/rooms', 
+      icon: <FaCouch /> 
+    },
+    { 
+      name: 'Dịch vụ & KM', 
+      path: '/admin/combos', 
+      icon: <FaHamburger /> 
+    },
+    { 
+      name: 'Người dùng', 
+      path: '/admin/users', 
+      icon: <FaUserCog /> 
+    },
+    { 
+      name: 'Về trang chủ', 
+      path: '/', 
+      icon: <FaGlobe /> 
+    },
   ];
-
   return (
     <>
       {/* SIDEBAR CHÍNH */}

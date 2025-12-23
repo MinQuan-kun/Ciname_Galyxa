@@ -4,17 +4,29 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import axiosClient from '@/api/axios';
 import { toast } from 'react-toastify';
-import { FaArrowLeft, FaTicketAlt, FaHamburger, FaPlus, FaMinus, FaCheckCircle, FaStar, FaClock, FaCalendarAlt, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaArrowLeft, FaTicketAlt, FaHamburger, FaPlus, FaMinus, FaCheckCircle, FaClock, FaCalendarAlt, FaMapMarkerAlt, FaArrowRight, FaSpinner, FaQrcode } from 'react-icons/fa';
 import AuthModal from '@/components/AuthModal';
+
 
 const BookingPage = () => {
   const { id } = useParams();
   const router = useRouter();
 
+  // Mã QR Thông tin thật
+  const MY_BANK_INFO = {
+    BANK_ID: "MB",
+    ACCOUNT_NO: "0966846502",
+    ACCOUNT_NAME: "NGUYEN HUU MINH QUAN",
+    TEMPLATE: "compact2"     // Mẫu QR
+  };
+
   // --- STATE ---
   const [showtime, setShowtime] = useState(null);
   const [combos, setCombos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [paymentMethod] = useState('Bank');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedSeats, setSelectedSeats] = useState([]);
@@ -119,8 +131,11 @@ const BookingPage = () => {
       if (selectedSeats.length === 0) return toast.warn("Vui lòng chọn ghế!");
       if (!user) return setShowLogin(true);
       setShowUpsellModal(true);
-    } else if (currentStep === 2) setCurrentStep(3);
-    else if (currentStep === 3) handleSubmitBooking();
+    } else if (currentStep === 2) {
+      setCurrentStep(3);
+    } else if (currentStep === 3) {
+      setShowQRModal(true);
+    }
   };
 
   const handleBack = () => {
@@ -128,17 +143,41 @@ const BookingPage = () => {
     else setCurrentStep(currentStep - 1);
   };
 
-  const handleSubmitBooking = async () => {
+  const handleConfirmPayment = async () => {
+    setIsProcessing(true);
     try {
-      const formatCombos = Object.entries(selectedCombos).map(([id, qty]) => ({ comboId: id, quantity: qty }));
-      await axiosClient.post('/bookings', {
-        showtimeId: id, seats: selectedSeats, combos: formatCombos, totalPrice: finalTotalPrice
+      await new Promise(r => setTimeout(r, 1500));
+
+      // Format dữ liệu combo
+      const formatCombos = Object.entries(selectedCombos).map(([id, qty]) => {
+        const c = combos.find(i => i._id === id);
+        return { comboId: id, quantity: qty, name: c?.name, price: c?.price };
       });
-      toast.success("🎉 Đặt vé thành công!");
+
+      await axiosClient.post('/bookings', {
+        showtimeId: id,
+        seats: selectedSeats,
+        combos: formatCombos,
+        totalPrice: finalTotalPrice,
+        paymentMethod: 'Bank'
+      });
+
+      toast.success("Thanh toán thành công! Vé đã được lưu.");
       router.push('/profile');
+
     } catch (error) {
-      toast.error(error.response?.data?.message || "Lỗi đặt vé");
+      console.error(error);
+      toast.error(error.response?.data?.message || "Lỗi đặt vé!");
+      setIsProcessing(false);
+      setShowQRModal(false);
     }
+  };
+
+  // HÀM TẠO LINK QR
+  const getQRCodeUrl = () => {
+    const addInfo = `VePhim ${user?.phone || 'Guest'}`;
+    // Tạo link QR động theo số tiền
+    return `https://img.vietqr.io/image/${MY_BANK_INFO.BANK_ID}-${MY_BANK_INFO.ACCOUNT_NO}-${MY_BANK_INFO.TEMPLATE}.png?amount=${finalTotalPrice}&addInfo=${encodeURIComponent(addInfo)}&accountName=${encodeURIComponent(MY_BANK_INFO.ACCOUNT_NAME)}`;
   };
 
   // --- RENDER HELPERS ---
@@ -195,7 +234,7 @@ const BookingPage = () => {
           {/* Mobile Stepper (Hiện nếu màn hình nhỏ) */}
           <div className="md:hidden mb-6">{renderSteps()}</div>
 
-          {/* TAB 1: GHẾ */}
+          {/* STEP 1: GHẾ */}
           {currentStep === 1 && (
             <div className="flex flex-col items-center animate-in fade-in slide-in-from-left-5 duration-300">
               <div className="w-full max-w-3xl mb-8 relative">
@@ -235,7 +274,7 @@ const BookingPage = () => {
             </div>
           )}
 
-          {/* TAB 2: COMBO */}
+          {/* STEP 2: COMBO */}
           {currentStep === 2 && (
             <div className="animate-in fade-in slide-in-from-right-10 duration-300">
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><FaHamburger className="text-orange-500" /> Chọn Combo Ưu Đãi</h2>
@@ -263,29 +302,41 @@ const BookingPage = () => {
             </div>
           )}
 
-          {/* TAB 3: THANH TOÁN */}
+          {/* STEP 3: THANH TOÁN */}
           {currentStep === 3 && (
-            <div className="animate-in fade-in slide-in-from-right-10 duration-300">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><FaCheckCircle className="text-green-500" /> Xác nhận thanh toán</h2>
-                <p className="text-slate-400 text-sm mb-6">Vui lòng kiểm tra lại thông tin vé bên tay phải trước khi tiến hành thanh toán.</p>
+            <div className="max-w-4xl mx-auto px-4 mt-8 animate-in fade-in slide-in-from-right-10">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl text-center">
+                <h2 className="text-2xl font-bold mb-2 text-white">Xác nhận & Thanh toán</h2>
+                <p className="text-slate-400 mb-8">Vui lòng mở app ngân hàng để quét mã QR bên dưới</p>
 
-                <div className="space-y-4">
-                  <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 flex items-center gap-4 cursor-pointer hover:border-orange-500 transition">
-                    <div className="w-6 h-6 rounded-full border-2 border-orange-500 flex items-center justify-center"><div className="w-3 h-3 bg-orange-500 rounded-full"></div></div>
-                    <div>
-                      <h4 className="font-bold text-white">Thanh toán qua ví MoMo</h4>
-                      <p className="text-xs text-slate-500">Quét mã QR để thanh toán nhanh chóng</p>
-                    </div>
-                  </div>
-                  <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 flex items-center gap-4 cursor-pointer hover:border-orange-500 transition opacity-50">
-                    <div className="w-6 h-6 rounded-full border-2 border-slate-600"></div>
-                    <div>
-                      <h4 className="font-bold text-white">Thẻ ATM / Visa / Master</h4>
-                      <p className="text-xs text-slate-500">Đang bảo trì</p>
-                    </div>
+                {/* --- KHUNG QR TO RÕ --- */}
+                <div className="flex justify-center mb-8">
+                  <div className="w-80 h-80 md:w-96 md:h-96 bg-white rounded-lg overflow-hidden relative shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                    <img
+                      src={getQRCodeUrl()}
+                      alt="VietQR Payment"
+                      className={`w-full h-full object-contain p-2 transition duration-500 ${isProcessing ? 'blur-sm scale-110' : ''}`}
+                    />
+
+                    {/* Loading Overlay */}
+                    {isProcessing && (
+                      <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center z-20">
+                        <FaSpinner className="animate-spin text-5xl text-orange-500 mb-3" />
+                        <span className="font-bold text-orange-600 animate-pulse">Đang xử lý...</span>
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {/* NÚT XÁC NHẬN */}
+                <button
+                  disabled={isProcessing}
+                  onClick={handleConfirmPayment}
+                  className="bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 px-12 rounded-full shadow-lg hover:scale-105 transition active:scale-95 disabled:opacity-70 flex items-center justify-center gap-3 mx-auto text-lg w-full max-w-md"
+                >
+                  {isProcessing ? <FaSpinner className="animate-spin" /> : <FaCheckCircle />}
+                  {isProcessing ? 'Đang kiểm tra giao dịch...' : 'Xác nhận đã chuyển khoản'}
+                </button>
               </div>
             </div>
           )}
@@ -393,8 +444,8 @@ const BookingPage = () => {
       {showUpsellModal && suggestedCombos.length > 0 && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-slate-900 w-full max-w-lg rounded-2xl p-6 border border-slate-700 shadow-2xl relative">
-            
-            <button 
+
+            <button
               onClick={() => { setShowUpsellModal(false); setCurrentStep(2); }}
               className="absolute top-4 right-4 text-slate-400 hover:text-white"
             >
@@ -420,10 +471,10 @@ const BookingPage = () => {
                   <div key={combo._id} className="bg-slate-800 p-3 rounded-xl border border-slate-700 flex gap-4 items-center group hover:border-orange-500/50 transition">
                     {/* Ảnh */}
                     <div className="relative w-20 h-20 flex-shrink-0">
-                      <img 
-                        src={combo.image || "https://via.placeholder.com/150"} 
-                        alt={combo.name} 
-                        className="w-full h-full object-cover rounded-lg" 
+                      <img
+                        src={combo.image || "https://via.placeholder.com/150"}
+                        alt={combo.name}
+                        className="w-full h-full object-cover rounded-lg"
                       />
                       {combo.isHot && (
                         <div className="absolute -top-2 -left-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md z-10">
@@ -431,7 +482,7 @@ const BookingPage = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Thông tin */}
                     <div className="flex-1">
                       <h4 className="font-bold text-white text-md line-clamp-1">{combo.name}</h4>
@@ -442,21 +493,20 @@ const BookingPage = () => {
                     </div>
 
                     {/* Nút Thêm/Đã thêm */}
-                    <button 
+                    <button
                       onClick={() => {
                         // Nếu chưa chọn thì thêm 1, nếu chọn rồi thì thôi (hoặc có thể làm logic cộng dồn)
                         if (!isSelected) {
-                           handleComboChange(combo._id, 1);
-                           toast.success(`Đã thêm ${combo.name}`);
+                          handleComboChange(combo._id, 1);
+                          toast.success(`Đã thêm ${combo.name}`);
                         }
-                      }} 
-                      className={`px-4 py-2 rounded-lg font-bold text-sm transition shadow-lg ${
-                        isSelected 
-                        ? 'bg-green-600 text-white cursor-default' 
+                      }}
+                      className={`px-4 py-2 rounded-lg font-bold text-sm transition shadow-lg ${isSelected
+                        ? 'bg-green-600 text-white cursor-default'
                         : 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-900/20'
-                      }`}
+                        }`}
                     >
-                      {isSelected ? <span className="flex items-center gap-1"><FaCheckCircle/> Đã chọn</span> : 'Thêm +'}
+                      {isSelected ? <span className="flex items-center gap-1"><FaCheckCircle /> Đã chọn</span> : 'Thêm +'}
                     </button>
                   </div>
                 );
@@ -464,8 +514,8 @@ const BookingPage = () => {
             </div>
 
             {/* Nút điều hướng cuối cùng */}
-            <button 
-              onClick={() => { setShowUpsellModal(false); setCurrentStep(2); }} 
+            <button
+              onClick={() => { setShowUpsellModal(false); setCurrentStep(2); }}
               className="w-full py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold transition border border-slate-600"
             >
               Tiếp tục thanh toán ➔

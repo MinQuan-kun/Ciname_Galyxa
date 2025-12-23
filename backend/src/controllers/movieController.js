@@ -1,5 +1,5 @@
 import Movie from '../models/Movie.js';
-
+import { deleteImageFromCloudinary } from '../utils/cloudinaryHelper.js';
 // Lấy danh sách phim
 export const getMovies = async (req, res) => {
   try {
@@ -18,11 +18,6 @@ export const createMovie = async (req, res) => {
     if (typeof genre === 'string') {
         genre = genre.split(',').map(item => item.trim());
     }
-
-    // --- Xử lý upload 2 ảnh ---
-    // Lưu ý: Khi dùng upload.fields, file sẽ nằm trong req.files (số nhiều)
-    // req.files['poster'][0] là file poster
-    // req.files['banner'][0] là file banner
     
     const posterPath = req.files?.poster ? req.files.poster[0].path : req.body.poster;
     const bannerPath = req.files?.banner ? req.files.banner[0].path : req.body.banner;
@@ -60,10 +55,15 @@ export const getMovieById = async (req, res) => {
 
 export const deleteMovie = async (req, res) => {
   try {
-    const movie = await Movie.findByIdAndDelete(req.params.id);
+    const movie = await Movie.findById(req.params.id);
     if (!movie) return res.status(404).json({ message: "Không tìm thấy phim để xóa!" });
+
+    if (movie.poster) await deleteImageFromCloudinary(movie.poster);
+    if (movie.banner) await deleteImageFromCloudinary(movie.banner);
+
+    await Movie.findByIdAndDelete(req.params.id);
     
-    res.status(200).json({ message: "Đã xóa phim thành công!" });
+    res.status(200).json({ message: "Đã xóa phim và ảnh liên quan thành công!" });
   } catch (error) {
     res.status(500).json({ message: "Lỗi xóa phim: " + error.message });
   }
@@ -74,24 +74,24 @@ export const updateMovie = async (req, res) => {
     const { id } = req.params;
     let updateData = { ...req.body };
 
-    // Xử lý genre (Nếu gửi lên dạng chuỗi "Hành động, Hài" -> chuyển thành mảng)
+    const oldMovie = await Movie.findById(id);
+    if (!oldMovie) return res.status(404).json({ message: "Không tìm thấy phim!" });
+
     if (typeof updateData.genre === 'string') {
         updateData.genre = updateData.genre.split(',').map(item => item.trim());
     }
 
-    // Xử lý ảnh: Chỉ cập nhật nếu có file mới được upload
     if (req.files?.poster) {
+        if (oldMovie.poster) await deleteImageFromCloudinary(oldMovie.poster);
         updateData.poster = req.files.poster[0].path;
     }
+    
     if (req.files?.banner) {
+        if (oldMovie.banner) await deleteImageFromCloudinary(oldMovie.banner);
         updateData.banner = req.files.banner[0].path;
     }
 
-    // Tìm và update
     const updatedMovie = await Movie.findByIdAndUpdate(id, updateData, { new: true });
-
-    if (!updatedMovie) return res.status(404).json({ message: "Không tìm thấy phim!" });
-
     res.status(200).json(updatedMovie);
   } catch (error) {
     res.status(500).json({ message: "Lỗi cập nhật phim: " + error.message });

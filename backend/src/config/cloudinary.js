@@ -11,7 +11,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
@@ -20,5 +19,5 @@ const storage = new CloudinaryStorage({
   }
 });
 
-// 3. Khởi tạo Multer upload
 export const upload = multer({ storage });
+export default cloudinary;

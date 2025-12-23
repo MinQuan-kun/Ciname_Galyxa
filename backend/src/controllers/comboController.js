@@ -1,5 +1,5 @@
 import Combo from '../models/Combo.js';
-
+import { deleteImageFromCloudinary } from '../utils/cloudinaryHelper.js';
 // 1. Lấy tất cả combo
 export const getCombos = async (req, res) => {
   try {
@@ -51,26 +51,23 @@ export const createCombo = async (req, res) => {
 export const updateCombo = async (req, res) => {
   try {
     const { id } = req.params;
+    // ... lấy data body ...
     const { name, price, items, description, isHot } = req.body;
+    
+    const updates = { name, price, items, description, isHot: isHot === 'true' || isHot === true };
 
-    const updates = {
-      name,
-      price,
-      items,
-      description,
-      isHot: isHot === 'true' || isHot === true
-    };
+    const oldCombo = await Combo.findById(id);
+    if (!oldCombo) return res.status(404).json({ message: "Không tìm thấy Combo" });
 
+    // Nếu có file mới
     if (req.file) {
+      // Xóa ảnh cũ
+      if (oldCombo.image) await deleteImageFromCloudinary(oldCombo.image);
+      // Gán ảnh mới
       updates.image = req.file.path;
     }
 
     const updatedCombo = await Combo.findByIdAndUpdate(id, updates, { new: true });
-
-    if (!updatedCombo) {
-      return res.status(404).json({ message: "Không tìm thấy Combo để sửa" });
-    }
-
     res.status(200).json(updatedCombo);
   } catch (error) {
     console.error(error);
@@ -82,6 +79,10 @@ export const updateCombo = async (req, res) => {
 export const deleteCombo = async (req, res) => {
   try {
     const { id } = req.params;
+    const combo = await Combo.findById(id);
+    if (combo && combo.image) {
+        await deleteImageFromCloudinary(combo.image);
+    }
     await Combo.findByIdAndDelete(id);
     res.status(200).json({ message: 'Đã xóa combo' });
   } catch (error) {

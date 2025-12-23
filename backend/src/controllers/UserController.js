@@ -1,6 +1,6 @@
 // Thái bình, Bổ sung logic cho các controller lưu ý là không lấy mật khẩu, và 3 hàm get update, delete là dành cho admin
 import User from '../models/User.js';
-
+import { deleteImageFromCloudinary } from '../utils/cloudinaryHelper.js';
 
 // 1. Lấy tất cả user
 export const getAllUsers = async (req, res) => {
@@ -65,29 +65,44 @@ export const getProfile = async (req, res) => {
 // 5. Cập nhật profile
 export const updateProfile = async (req, res) => {
   try {
-    const userId = req.user.id; // From auth middleware
+    const userId = req.user.id; 
     const updates = req.body;
+    
     // Allow updating name, email, phone, password
     const allowedUpdates = ['name', 'email', 'phone', 'password'];
     const filteredUpdates = {};
+    
     for (const key of allowedUpdates) {
       if (updates[key] !== undefined) {
         filteredUpdates[key] = updates[key];
       }
     }
+
+    // Xử lý mật khẩu
     if (filteredUpdates.password) {
-      // Hash new password
       const bcrypt = await import('bcryptjs');
       const salt = await bcrypt.genSalt(10);
       filteredUpdates.password = await bcrypt.hash(filteredUpdates.password, salt);
     }
+    
+    // Xử lý Avatar
     if (req.file) {
-      filteredUpdates.avatar = req.file.path; // Assuming cloudinary upload
+      const oldUser = await User.findById(userId);
+      
+      // Xóa ảnh cũ 
+      if (oldUser.avatar && !oldUser.avatar.includes("ui-avatars.com")) { 
+          await deleteImageFromCloudinary(oldUser.avatar);
+      }
+      
+      filteredUpdates.avatar = req.file.path; 
     }
+
     const user = await User.findByIdAndUpdate(userId, filteredUpdates, { new: true }).select('-password');
+    
     if (!user) {
       return res.status(404).json({ message: 'Người dùng không tồn tại' });
     }
+    
     res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ message: 'Lỗi khi cập nhật hồ sơ', error: error.message });
@@ -107,29 +122,32 @@ export const getUserById = async (req, res) => {
     res.status(500).json({ message: 'Lỗi khi lấy thông tin người dùng', error: error.message });
   }
 };
-/**
- * Cập nhật CHỈ Avatar
- * Dành cho trường hợp người dùng chọn ảnh là lưu ngay
- */
+// 7. Upload Avatar
 export const updateAvatar = async (req, res) => {
   try {
     const userId = req.user.id;
-
-    // Kiểm tra xem có file được gửi lên không
     if (!req.file) {
       return res.status(400).json({ message: 'Vui lòng chọn ảnh để tải lên' });
     }
+    const currentUser = await User.findById(userId);
 
-    // Chỉ cập nhật duy nhất trường avatar
-    const user = await User.findByIdAndUpdate(
+    if (!currentUser) {
+        return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    }
+
+    if (currentUser.avatar && !currentUser.avatar.includes('ui-avatars.com')) {
+        await deleteImageFromCloudinary(currentUser.avatar);
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { $set: { avatar: req.file.path } }, // req.file.path là URL từ Cloudinary
+      { $set: { avatar: req.file.path } }, 
       { new: true }
     ).select('-password');
 
     res.status(200).json({
       message: 'Cập nhật ảnh đại diện thành công',
-      avatar: user.avatar // Trả về URL ảnh mới để frontend cập nhật UI
+      avatar: updatedUser.avatar
     });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi khi cập nhật ảnh đại diện', error: error.message });
