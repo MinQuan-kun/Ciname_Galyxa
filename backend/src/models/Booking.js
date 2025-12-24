@@ -13,6 +13,10 @@ const bookingSchema = new mongoose.Schema({
     }
   ],
   totalPrice: { type: Number, required: true },
+  originalPrice: { type: Number },           // Giá gốc trước giảm (để tính điểm)
+  voucherCode: { type: String },             // Mã voucher đã dùng
+  discountAmount: { type: Number, default: 0 }, // Số tiền được giảm
+  pointsEarned: { type: Number, default: 0 },   // Điểm đã nhận
   paymentMethod: { type: String, default: 'Bank' },
   status: { 
     type: String, 

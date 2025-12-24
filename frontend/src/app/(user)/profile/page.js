@@ -5,7 +5,7 @@ import axiosClient from '@/api/axios';
 import { toast } from 'react-toastify';
 import { 
   FaCamera, FaUser, FaHistory, FaStar, FaTicketAlt, 
-  FaCalendarAlt, FaSpinner, FaMapMarkerAlt, FaCrown 
+  FaCalendarAlt, FaSpinner, FaMapMarkerAlt, FaCrown, FaGift, FaCheck 
 } from 'react-icons/fa';
 
 const ProfilePage = () => {
@@ -21,6 +21,13 @@ const ProfilePage = () => {
   // State edit info
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
+
+  // State rewards
+  const [rewards, setRewards] = useState([]);
+  const [myVouchers, setMyVouchers] = useState([]);
+  const [redemptions, setRedemptions] = useState([]);
+  const [isRedeeming, setIsRedeeming] = useState(false);
+  const [rewardsTab, setRewardsTab] = useState('available'); // 'available' | 'myVouchers' | 'history'
 
   useEffect(() => {
     fetchProfile();
@@ -55,6 +62,66 @@ const ProfilePage = () => {
       setBookings(res.data);
     } catch (error) {
       console.log('Chưa có lịch sử đặt vé');
+    }
+  };
+
+  // Fetch rewards data when tab changes
+  useEffect(() => {
+    if (activeTab === 'rewards') {
+      fetchRewards();
+      fetchMyVouchers();
+      fetchRedemptions();
+    }
+  }, [activeTab]);
+
+  const fetchRewards = async () => {
+    try {
+      const res = await axiosClient.get('/rewards');
+      setRewards(res.data);
+    } catch (error) {
+      console.log('Lỗi lấy danh sách phần thưởng');
+    }
+  };
+
+  const fetchMyVouchers = async () => {
+    try {
+      const res = await axiosClient.get('/rewards/my-vouchers');
+      setMyVouchers(res.data);
+    } catch (error) {
+      console.log('Lỗi lấy voucher');
+    }
+  };
+
+  const fetchRedemptions = async () => {
+    try {
+      const res = await axiosClient.get('/rewards/my-redemptions');
+      setRedemptions(res.data);
+    } catch (error) {
+      console.log('Lỗi lấy lịch sử đổi điểm');
+    }
+  };
+
+  const handleRedeemReward = async (voucherId, pointCost) => {
+    if (user.points < pointCost) {
+      return toast.error(`Bạn cần ${pointCost} điểm để đổi, hiện có ${user.points} điểm`);
+    }
+
+    try {
+      setIsRedeeming(true);
+      const res = await axiosClient.post('/rewards/redeem', { voucherId });
+      toast.success(res.data.message);
+      
+      // Cập nhật điểm user
+      setUser(prev => ({ ...prev, points: prev.points - pointCost }));
+      
+      // Refresh data
+      fetchRewards();
+      fetchMyVouchers();
+      fetchRedemptions();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Lỗi đổi điểm');
+    } finally {
+      setIsRedeeming(false);
     }
   };
 
@@ -247,6 +314,12 @@ const ProfilePage = () => {
                 className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition font-medium ${activeTab === 'reviews' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/40' : 'hover:bg-gray-700/50 text-gray-400 hover:text-gray-200'}`}
               >
                 <FaStar /> Đánh giá của tôi
+              </button>
+              <button
+                onClick={() => setActiveTab('rewards')}
+                className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition font-medium ${activeTab === 'rewards' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/40' : 'hover:bg-gray-700/50 text-gray-400 hover:text-gray-200'}`}
+              >
+                <FaGift /> Đổi Thưởng
               </button>
             </div>
           </div>
@@ -464,6 +537,164 @@ const ProfilePage = () => {
                 </div>
                 <h3 className="text-xl font-bold text-white">Tính năng đang phát triển</h3>
                 <p className="text-gray-400 mt-2 max-w-md mx-auto">Danh sách các bài đánh giá phim của bạn sẽ sớm được hiển thị tại đây.</p>
+              </div>
+            )}
+
+            {/* TAB: ĐỔI THƯỞNG */}
+            {activeTab === 'rewards' && (
+              <div className="animate-fade-in space-y-6">
+                {/* Header với điểm */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-700 pb-4">
+                  <div>
+                    <h3 className="text-2xl font-bold text-white">Đổi Điểm Thưởng</h3>
+                    <p className="text-gray-400 text-sm mt-1">Dùng điểm để đổi voucher giảm giá và nhiều phần quà hấp dẫn</p>
+                  </div>
+                  <div className="bg-gradient-to-r from-orange-600 to-yellow-500 px-6 py-3 rounded-xl flex items-center gap-3">
+                    <FaGift className="text-white text-xl" />
+                    <div>
+                      <p className="text-white/80 text-xs font-medium">Điểm hiện có</p>
+                      <p className="text-white text-2xl font-black">{user.points}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sub-tabs */}
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => setRewardsTab('available')}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold transition ${rewardsTab === 'available' ? 'bg-orange-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                  >
+                    Phần thưởng có thể đổi
+                  </button>
+                  <button
+                    onClick={() => setRewardsTab('myVouchers')}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold transition ${rewardsTab === 'myVouchers' ? 'bg-orange-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                  >
+                    Voucher của tôi ({myVouchers.length})
+                  </button>
+                  <button
+                    onClick={() => setRewardsTab('history')}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold transition ${rewardsTab === 'history' ? 'bg-orange-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                  >
+                    Lịch sử đổi điểm
+                  </button>
+                </div>
+
+                {/* Sub-tab: Available Rewards */}
+                {rewardsTab === 'available' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {rewards.length === 0 ? (
+                      <div className="col-span-2 text-center py-12 text-gray-400">
+                        <FaGift className="text-5xl mx-auto mb-4 opacity-50" />
+                        <p>Chưa có phần thưởng nào có sẵn</p>
+                      </div>
+                    ) : (
+                      rewards.map((reward) => (
+                        <div key={reward._id} className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 flex gap-4 hover:border-orange-500/50 transition group">
+                          <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <FaGift className="text-white text-2xl" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-bold text-white group-hover:text-orange-400 transition">{reward.name}</h4>
+                            <p className="text-gray-400 text-xs mt-1 line-clamp-2">{reward.description}</p>
+                            <div className="flex items-center justify-between mt-3">
+                              <div className="flex items-center gap-1">
+                                <span className="text-orange-400 font-bold">{reward.pointCost}</span>
+                                <span className="text-gray-500 text-sm">điểm</span>
+                              </div>
+                              <button
+                                onClick={() => handleRedeemReward(reward._id, reward.pointCost)}
+                                disabled={isRedeeming || user.points < reward.pointCost}
+                                className={`px-4 py-1.5 rounded-lg text-sm font-bold transition ${
+                                  user.points >= reward.pointCost 
+                                    ? 'bg-orange-600 hover:bg-orange-500 text-white' 
+                                    : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                                }`}
+                              >
+                                {isRedeeming ? <FaSpinner className="animate-spin" /> : 'Đổi ngay'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* Sub-tab: My Vouchers */}
+                {rewardsTab === 'myVouchers' && (
+                  <div className="space-y-4">
+                    {myVouchers.length === 0 ? (
+                      <div className="text-center py-12 text-gray-400">
+                        <FaTicketAlt className="text-5xl mx-auto mb-4 opacity-50" />
+                        <p>Bạn chưa có voucher nào</p>
+                        <p className="text-sm mt-2">Hãy đổi điểm để nhận voucher!</p>
+                      </div>
+                    ) : (
+                      myVouchers.map((item) => (
+                        <div key={item._id} className="bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-4 flex items-center gap-4">
+                          <div className="w-14 h-14 bg-green-600/20 border border-green-600 rounded-xl flex items-center justify-center">
+                            <FaCheck className="text-green-400 text-xl" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-bold text-white">{item.voucherId?.name}</h4>
+                            <p className="text-gray-400 text-xs mt-1">
+                              {item.voucherId?.discountType === 'percent' 
+                                ? `Giảm ${item.voucherId?.value}%` 
+                                : `Giảm ${item.voucherId?.value?.toLocaleString()}đ`}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="bg-orange-600 text-white px-3 py-1.5 rounded-lg font-mono font-bold text-sm">{item.voucherCode}</p>
+                            <p className="text-gray-500 text-xs mt-1">
+                              HSD: {new Date(item.expiresAt).toLocaleDateString('vi-VN')}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* Sub-tab: Redemption History */}
+                {rewardsTab === 'history' && (
+                  <div className="space-y-3">
+                    {redemptions.length === 0 ? (
+                      <div className="text-center py-12 text-gray-400">
+                        <FaHistory className="text-5xl mx-auto mb-4 opacity-50" />
+                        <p>Chưa có lịch sử đổi điểm</p>
+                      </div>
+                    ) : (
+                      redemptions.map((item) => (
+                        <div key={item._id} className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 flex items-center gap-4">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            item.status === 'active' ? 'bg-green-600/20 text-green-400' :
+                            item.status === 'used' ? 'bg-blue-600/20 text-blue-400' :
+                            'bg-gray-600/20 text-gray-400'
+                          }`}>
+                            <FaGift />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-bold text-white">{item.voucherId?.name}</p>
+                            <p className="text-gray-500 text-xs">
+                              {new Date(item.redeemedAt).toLocaleString('vi-VN')}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-orange-400 font-bold">-{item.pointsSpent} điểm</p>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              item.status === 'active' ? 'bg-green-900/30 text-green-400' :
+                              item.status === 'used' ? 'bg-blue-900/30 text-blue-400' :
+                              'bg-gray-800 text-gray-400'
+                            }`}>
+                              {item.status === 'active' ? 'Chưa dùng' : item.status === 'used' ? 'Đã dùng' : 'Hết hạn'}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
