@@ -11,11 +11,18 @@ const formatDateLocal = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-const getNext7Days = () => {
+// Helper: Tính giờ kết thúc
+const calculateEndTime = (startTime, duration) => {
+  const start = new Date(startTime);
+  const end = new Date(start.getTime() + duration * 60000); 
+  return end.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+};
+
+const getNext14Days = () => {
   const days = [];
   const today = new Date();
   
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 14; i++) {
     const date = new Date(today);
     date.setDate(today.getDate() + i);
     days.push({
@@ -30,9 +37,9 @@ const getNext7Days = () => {
 
 const SchedulePage = () => {
   // --- STATE ---
-  const [dateList] = useState(getNext7Days());
-  const [selectedDate, setSelectedDate] = useState(dateList[0].isoDate); // Mặc định chọn hôm nay
-  const [moviesData, setMoviesData] = useState([]); // Dữ liệu phim & lịch chiếu
+  const [dateList] = useState(getNext14Days());
+  const [selectedDate, setSelectedDate] = useState(dateList[0].isoDate); 
+  const [moviesData, setMoviesData] = useState([]); 
   const [loading, setLoading] = useState(true);
 
   // --- API CALL ---
@@ -53,11 +60,9 @@ const SchedulePage = () => {
 
   // --- LOGIC FILTER ---
   const filteredMovies = moviesData.map(group => {
-    // Lọc suất chiếu khớp ngày
     const showsInDate = group.showtimes.filter(show => {
       const showDateObj = new Date(show.startTime);
       const showDateLocal = formatDateLocal(showDateObj);
-      
       return showDateLocal === selectedDate;
     });
 
@@ -67,32 +72,32 @@ const SchedulePage = () => {
     };
   }).filter(group => group.showtimes.length > 0);
 
+  const renderDateButton = (day) => (
+    <button
+      key={day.isoDate}
+      onClick={() => setSelectedDate(day.isoDate)}
+      className={`
+        flex flex-col items-center justify-center min-w-[90px] px-4 py-3 rounded-xl transition-all border-2
+        ${selectedDate === day.isoDate
+          ? 'border-orange-500 bg-orange-500/20 text-orange-400 scale-105 shadow-[0_0_15px_rgba(249,115,22,0.4)]'
+          : 'border-gray-800 bg-gray-900 text-gray-400 hover:border-gray-600 hover:bg-gray-800'}
+      `}
+    >
+      <span className="text-xs font-medium uppercase tracking-wider mb-1">{day.dayName}</span>
+      <span className="text-xl font-bold">{day.dateStr}</span>
+    </button>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 py-10 px-4 md:px-10">
+    <div className="min-h-screen bg-gray-950 text-gray-100 pt-6 pb-10 px-4 md:px-10">
 
-      {/* 1. HEADER & DATE SELECTOR */}
-      <div className="max-w-6xl mx-auto mb-10">
-        <h1 className="text-3xl md:text-4xl font-bold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-pink-500 uppercase tracking-widest">
-          Lịch Chiếu Phim
-        </h1>
-
-        {/* Thanh cuộn ngày */}
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide justify-start md:justify-center">
-          {dateList.map((day) => (
-            <button
-              key={day.isoDate}
-              onClick={() => setSelectedDate(day.isoDate)}
-              className={`
-                flex flex-col items-center justify-center min-w-[90px] px-4 py-3 rounded-xl transition-all border-2
-                ${selectedDate === day.isoDate
-                  ? 'border-orange-500 bg-orange-500/20 text-orange-400 scale-105 shadow-[0_0_15px_rgba(249,115,22,0.4)]'
-                  : 'border-gray-800 bg-gray-900 text-gray-400 hover:border-gray-600 hover:bg-gray-800'}
-              `}
-            >
-              <span className="text-xs font-medium uppercase tracking-wider mb-1">{day.dayName}</span>
-              <span className="text-xl font-bold">{day.dateStr}</span>
-            </button>
-          ))}
+      {/* 1. DATE SELECTOR */}
+      <div className="max-w-6xl mx-auto mb-16 space-y-6">
+        <div className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide justify-start md:justify-center">
+          {dateList.slice(0, 7).map(renderDateButton)}
+        </div>
+        <div className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide justify-start md:justify-center">
+           {dateList.slice(7, 14).map(renderDateButton)}
         </div>
       </div>
 
@@ -144,42 +149,63 @@ const SchedulePage = () => {
                   <div className="flex flex-wrap gap-3">
                     {item.showtimes.map((show) => {
                       const timeString = new Date(show.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                      const endTimeString = calculateEndTime(show.startTime, item.movie.duration);
 
                       const showTimeDate = new Date(show.startTime);
                       const now = new Date();
                       const closeBookingTime = new Date(showTimeDate.getTime() - 10 * 60000);
                       const isBookingClosed = now >= closeBookingTime;
 
+                      // === LOGIC NÚT (ĐÃ ĐÓNG) ===
                       if (isBookingClosed) {
                         return (
                           <div
                             key={show._id}
-                            className="relative px-5 py-2 rounded-lg bg-gray-800 border border-gray-700 opacity-50 cursor-not-allowed text-center min-w-[80px]"
+                            className="relative px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 opacity-50 cursor-not-allowed text-center min-w-[90px] flex flex-col justify-center"
                             title="Đã hết hạn đặt vé (trước 10 phút)"
                           >
-                            <div className="text-lg font-bold text-gray-500">
+                            {/* Giờ bắt đầu */}
+                            <div className="text-lg font-bold text-gray-500 leading-none mb-1">
                               {timeString}
                             </div>
-                            <div className="text-[10px] text-gray-600 mt-1">
+                            
+                            {/* Loại phòng (GIỮ LẠI) */}
+                            <div className="text-[10px] font-bold text-gray-600 uppercase">
                               {show.roomId?.type || '2D'}
+                            </div>
+
+                            {/* Giờ kết thúc */}
+                            <div className="text-[10px] text-gray-600">
+                               ~ {endTimeString}
                             </div>
                           </div>
                         );
                       }
 
+                      // === LOGIC NÚT (ĐANG MỞ) ===
                       return (
                         <Link
                           key={show._id}
-                          href={`/booking/${show._id}`} // Link đến trang đặt vé
+                          href={`/booking/${show._id}`} 
                           className="group/btn relative"
                         >
-                          <div className="px-5 py-2 rounded-lg bg-gray-800 border border-gray-700 hover:border-orange-500 hover:bg-orange-500 transition-all cursor-pointer text-center min-w-[80px]">
-                            <div className="text-lg font-bold text-white group-hover/btn:text-white">
+                          <div className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 hover:border-orange-500 hover:bg-orange-500 transition-all cursor-pointer text-center min-w-[90px] flex flex-col justify-center">
+                            
+                            {/* Giờ bắt đầu */}
+                            <div className="text-lg font-bold text-white group-hover/btn:text-white leading-none mb-1">
                               {timeString}
                             </div>
-                            <div className="text-[10px] text-gray-400 group-hover/btn:text-orange-100 mt-1">
+                            
+                            {/* Loại phòng (GIỮ LẠI - Có đổi màu khi hover) */}
+                            <div className="text-[10px] font-bold text-gray-400 group-hover/btn:text-orange-100 uppercase">
                               {show.roomId?.type || '2D'}
                             </div>
+
+                            {/* Giờ kết thúc */}
+                            <div className="text-[10px] text-gray-500 group-hover/btn:text-orange-200">
+                               ~ {endTimeString}
+                            </div>
+
                             {/* Tooltip giá vé */}
                             <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-black text-xs font-bold px-2 py-1 rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
                               {show.ticketPrice.toLocaleString()}đ
