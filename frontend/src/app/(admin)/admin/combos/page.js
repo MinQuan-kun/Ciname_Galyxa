@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import axiosClient from '@/api/axios';
 
-import { FaPlus, FaEdit, FaTrash, FaFire, FaFire, FaImage, FaListUl } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaFire, FaImage, FaListUl } from 'react-icons/fa';
 
 const CombosPage = () => {
   const [combos, setCombos] = useState([]);
