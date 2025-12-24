@@ -5,6 +5,8 @@
 
 'use client';
 import React, { useState, useEffect } from 'react';
+import axiosClient from '@/api/axios'; // <--- Import axiosClient
+import { toast } from 'react-toastify';
 
 const SEAT_TYPES = {
   Standard: { color: 'bg-blue-600', label: 'Thường', price: 0 },
@@ -39,9 +41,8 @@ const RoomsPage = () => {
   const fetchRooms = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5001/api/rooms');
-      const data = await res.json();
-      if (res.ok) setRooms(data);
+      const res = await axiosClient.get('/rooms');
+      setRooms(res.data);
     } catch (error) {
       console.error("Lỗi tải phòng:", error);
     } finally {
@@ -73,70 +74,37 @@ const RoomsPage = () => {
     setSeatMap([]);
   };
 
-  const handleSave = async () => {
-    if (!formData.name.trim()) {
-        alert("Vui lòng nhập tên phòng!");
-        return;
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!formData.movieId || !formData.roomId || !formData.startTime) {
+      alert("Vui lòng điền đầy đủ thông tin!");
+      return;
     }
-    syncTokenToCookie();
-
-    const validSeats = seatMap.filter(s => s.type !== '_HIDDEN');
-    const payload = {
-      name: formData.name,
-      type: formData.type,
-      seatMap: validSeats,
-      totalSeats: validSeats.length,
-      status: 'Active'
-    };
 
     try {
-      const url = isEditing 
-        ? `http://localhost:5001/api/rooms/${selectedRoom._id}`
-        : 'http://localhost:5001/api/rooms';
-      
-      const method = isEditing ? 'PUT' : 'POST';
-
-      const res = await fetch(url, {
-        method: method,
-        credentials: 'include', 
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        alert(isEditing ? 'Cập nhật thành công!' : 'Tạo phòng thành công!');
-        fetchRooms();
-        if (!isEditing) handleCreateNew();
+      if (isEditing) {
+          await axiosClient.put(`/showtimes/${currentShowtimeId}`, formData);
+          alert("Cập nhật thành công!");
       } else {
-        if (res.status === 401) alert("Lỗi 401: Hết phiên đăng nhập.");
-        else if (res.status === 403) alert("Lỗi 403: Không có quyền Admin.");
-        else alert(`Lỗi: ${data.message}`);
+          await axiosClient.post('/showtimes', formData);
+          alert("Tạo lịch chiếu thành công!");
       }
+
+      setIsModalOpen(false);
+      fetchShowtimes(selectedMovieId); 
     } catch (error) {
-      alert('Lỗi kết nối server: ' + error.message);
+      alert("Lỗi: " + (error.response?.data?.message || error.message));
     }
   };
 
   const handleDelete = async (id) => {
-    if(!confirm("Bạn có chắc chắn muốn xóa phòng này?")) return;
-    syncTokenToCookie();
+    if (!confirm("Bạn có chắc chắn muốn xóa suất chiếu này?")) return;
     try {
-      const res = await fetch(`http://localhost:5001/api/rooms/${id}`, { 
-          method: 'DELETE',
-          credentials: 'include'
-      });
-      if (res.ok) {
-        alert("Đã xóa phòng");
-        fetchRooms();
-        handleCreateNew();
-      } else {
-        const data = await res.json();
-        alert("Lỗi: " + data.message);
-      }
+      await axiosClient.delete(`/showtimes/${id}`);
+      alert("Đã xóa thành công!");
+      fetchShowtimes(selectedMovieId);
     } catch (error) {
-      alert("Lỗi khi xóa");
+      alert("Lỗi khi xóa: " + (error.response?.data?.message || error.message));
     }
   };
 

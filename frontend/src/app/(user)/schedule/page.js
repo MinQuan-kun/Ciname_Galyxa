@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import axiosClient from '@/api/axios';
 
 const formatDateLocal = (date) => {
   const d = new Date(date);
@@ -18,10 +19,10 @@ const getNext7Days = () => {
     const date = new Date(today);
     date.setDate(today.getDate() + i);
     days.push({
-      fullDate: date,
+      fullDate: date, 
       dayName: i === 0 ? 'Hôm nay' : date.toLocaleDateString('vi-VN', { weekday: 'long' }),
       dateStr: date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
-      isoDate: formatDateLocal(date) // <--- Dùng hàm mới này
+      isoDate: date.toISOString().split('T')[0] 
     });
   }
   return days;
@@ -39,13 +40,8 @@ const SchedulePage = () => {
     const fetchSchedule = async () => {
       setLoading(true);
       try {
-        // Gọi API lấy tất cả lịch chiếu (đã viết ở bước trước)
-        // API này trả về: [{ movie: {...}, showtimes: [...] }, ...]
-        const res = await fetch('http://localhost:5001/api/showtimes');
-        if (res.ok) {
-          const data = await res.json();
-          setMoviesData(data);
-        }
+        const res = await axiosClient.get('/showtimes'); 
+        setMoviesData(res.data);
       } catch (error) {
         console.error("Lỗi tải lịch chiếu:", error);
       } finally {

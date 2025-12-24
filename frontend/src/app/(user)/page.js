@@ -1,10 +1,13 @@
 import Banner from '@/components/Banner';
-import MovieGrid from '@/components/MovieGrid'; // Import component mới
-import Link from 'next/link'; // Dùng Link của NextJS thay vì thẻ a
+import MovieGrid from '@/components/MovieGrid';
+import Link from 'next/link'; 
+import axiosClient from '@/api/axios';
 
 async function getMovies() {
   try {
-    const res = await fetch('http://localhost:5001/api/movies', { cache: 'no-store' });
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+    const res = await fetch(`${apiUrl}/movies`, { cache: 'no-store' });
+    
     if (!res.ok) return [];
     return await res.json();
   } catch (error) {

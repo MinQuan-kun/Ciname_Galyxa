@@ -2,13 +2,16 @@ import React from 'react';
 import MovieGrid from '@/components/MovieGrid';
 import { FaFilm } from 'react-icons/fa';
 
-// Tái sử dụng hàm fetch (hoặc tách ra file utils/api nếu muốn gọn)
 async function getAllMovies() {
   try {
-    const res = await fetch('http://localhost:5001/api/movies', { cache: 'no-store' });
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+    
+    const res = await fetch(`${apiUrl}/movies`, { cache: 'no-store' });
+    
     if (!res.ok) return [];
     return await res.json();
   } catch (error) {
+    console.error("Lỗi tải phim:", error);
     return [];
   }
 }
