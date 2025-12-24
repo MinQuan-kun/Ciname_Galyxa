@@ -235,28 +235,28 @@ const BookingPage = () => {
           {/* STEP 1: GHẾ */}
           {currentStep === 1 && (
             <div className="flex flex-col items-center animate-in fade-in slide-in-from-left-5 duration-300">
-              
+
               {/* MÀN HÌNH (Khớp style Admin) */}
               <div className="w-2/3 bg-gradient-to-b from-gray-700 to-transparent h-12 mb-12 rounded-t-[50%] opacity-50 relative shadow-[0_-5px_20px_rgba(255,255,255,0.1)] border-t border-gray-600">
-                 <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-gray-500 tracking-[0.2em] uppercase font-bold">Màn hình</span>
+                <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-gray-500 tracking-[0.2em] uppercase font-bold">Màn hình</span>
               </div>
 
               {/* SƠ ĐỒ GHẾ (Render theo Row giống Admin) */}
               <div className="flex flex-col gap-1.5 overflow-x-auto w-full items-center pb-8 min-w-max"> {/* Sửa: gap-1.5 và min-w-max */}
-                 {uniqueRows.map(rowLabel => (
-                    <div key={rowLabel} className="flex items-center justify-center gap-1.5"> {/* Sửa: gap-1.5 */}
-                        
-                        {seatMap.filter(s => s.row === rowLabel).map(seat => {
-                            const isBooked = showtime.bookedSeats?.includes(seat.id);
-                            const isSelected = selectedSeats.includes(seat.id);
-                            const seatTypeInfo = SEAT_TYPES[seat.type] || SEAT_TYPES.Standard;
-                            
-                            return (
-                                <button 
-                                    key={seat.id} 
-                                    onClick={() => handleSeatClick(seat)}
-                                    disabled={isBooked || seat.type === '_HIDDEN'}
-                                    className={`
+                {uniqueRows.map(rowLabel => (
+                  <div key={rowLabel} className="flex items-center justify-center gap-1.5"> {/* Sửa: gap-1.5 */}
+
+                    {seatMap.filter(s => s.row === rowLabel).map(seat => {
+                      const isBooked = showtime.bookedSeats?.includes(seat.id);
+                      const isSelected = selectedSeats.includes(seat.id);
+                      const seatTypeInfo = SEAT_TYPES[seat.type] || SEAT_TYPES.Standard;
+
+                      return (
+                        <button
+                          key={seat.id}
+                          onClick={() => handleSeatClick(seat)}
+                          disabled={isBooked || seat.type === '_HIDDEN'}
+                          className={`
                                         /* Kích thước & Shape giống Admin */
                                         w-7 h-7                 /* Kích thước: 28px */
                                         text-[9px]              /* Cỡ chữ nhỏ */
@@ -269,25 +269,25 @@ const BookingPage = () => {
                                         /* Ẩn ghế trống */
                                         ${seat.type === '_HIDDEN' ? 'invisible' : ''}
                                         
-                                        ${isBooked 
-                                            ? 'bg-gray-800 text-gray-600 cursor-not-allowed border-gray-700' // Đã bán
-                                            : isSelected 
-                                                ? 'bg-orange-600 text-white scale-110 shadow-[0_0_10px_orange] z-10 border-orange-500' // Đang chọn
-                                                : seatTypeInfo.color + ' text-white/90 hover:brightness-125' // Màu mặc định theo loại
-                                        }
+                                        ${isBooked
+                              ? 'bg-gray-800 text-gray-600 cursor-not-allowed border-gray-700' // Đã bán
+                              : isSelected
+                                ? 'bg-orange-600 text-white scale-110 shadow-[0_0_10px_orange] z-10 border-orange-500' // Đang chọn
+                                : seatTypeInfo.color + ' text-white/90 hover:brightness-125' // Màu mặc định theo loại
+                            }
 
                                         /* Xử lý ghế đôi: (28px * 2) + gap 6px = 62px */
                                         ${seat.type === 'Couple' ? 'w-[62px]' : ''}
                                     `}
-                                    title={`Ghế ${seat.id} - ${seatTypeInfo.label} - ${new Intl.NumberFormat('vi-VN').format(getSeatPrice(seat.id))}đ`}
-                                >
-                                    {/* Hiển thị ID ghế (A1, A2...) kể cả ghế đôi */}
-                                    {seat.type !== '_HIDDEN' && seat.id} 
-                                </button>
-                            );
-                        })}
-                    </div>
-                 ))}
+                          title={`Ghế ${seat.id} - ${seatTypeInfo.label} - ${new Intl.NumberFormat('vi-VN').format(getSeatPrice(seat.id))}đ`}
+                        >
+                          {/* Hiển thị ID ghế (A1, A2...) kể cả ghế đôi */}
+                          {seat.type !== '_HIDDEN' && seat.id}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
 
               {/* CHÚ THÍCH (Đồng bộ màu) */}
@@ -404,9 +404,15 @@ const BookingPage = () => {
                 <span className="text-slate-400 text-sm">Tổng cộng</span>
                 <span className="text-xl font-black text-orange-500">{new Intl.NumberFormat('vi-VN').format(finalTotalPrice)}đ</span>
               </div>
-              <button onClick={handleNext} disabled={selectedSeats.length === 0} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition hover:scale-[1.02]">
-                {currentStep === 3 ? 'Thanh Toán Ngay' : 'Tiếp Tục'}
-              </button>
+              {currentStep !== 3 && (
+                <button
+                  onClick={handleNext}
+                  disabled={selectedSeats.length === 0}
+                  className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition hover:scale-[1.02]"
+                >
+                  Tiếp Tục
+                </button>
+              )}
             </div>
           </div>
         </div>
