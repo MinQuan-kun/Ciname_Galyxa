@@ -100,7 +100,7 @@ const UsersPage = () => {
             <tbody className="divide-y divide-gray-700">
               {filteredUsers.map((user) => (
                 <tr key={user._id} className="hover:bg-gray-700/30 transition duration-200">
-                  {/* CỘT TÊN (Chỉ còn Tên) */}
+                  {/* CỘT TÊN */}
                   <td className="p-4">
                     <span className="font-bold text-white text-lg">{user.name}</span>
                   </td>
