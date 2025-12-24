@@ -351,7 +351,7 @@ const BookingPage = () => {
               <div className="flex-1">
                 <h3 className="font-bold text-white text-base leading-tight mb-1">{showtime.movieId?.title}</h3>
                 <p className="text-xs text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded inline-block">
-                  {showtime.roomId?.type || 'Standard'} {/* */}
+                  {showtime.roomId?.type || 'Standard'}
                 </p>
               </div>
             </div>

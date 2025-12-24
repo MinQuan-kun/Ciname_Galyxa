@@ -91,7 +91,6 @@ const MovieBookingPage = () => {
                 grouped[roomId] = {
                     roomName: roomObj?.name || 'Rạp chưa đặt tên',
                     roomType: roomObj?.type || '2D',
-                    screenType: roomObj?.screenType || 'Standard',
                     times: []
                 };
             }
@@ -244,7 +243,6 @@ const MovieBookingPage = () => {
                                             <div>
                                                 <h3 className="font-bold text-white text-lg">{group.roomName}</h3>
                                                 <div className="flex gap-2 text-xs">
-                                                    <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">{group.screenType}</span>
                                                     <span className="bg-blue-900/30 text-blue-300 px-2 py-0.5 rounded border border-blue-800/50">{group.roomType}</span>
                                                 </div>
                                             </div>
