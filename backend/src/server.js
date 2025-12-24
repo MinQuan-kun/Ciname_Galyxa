@@ -24,14 +24,13 @@ const PORT = process.env.PORT || 5001;
 connectDB();
 
 // Middleware (Bộ lọc)
-app.use(
-    cors({
-        origin: process.env.NODE_ENV === "production"
-            ? "http://localhost:3000" // sau này đổi ngược lại khi deloy
-            : process.env.FRONTEND_URL ,
-        credentials: true
-    })
-);
+app.use(cors({
+    origin: [
+        "http://localhost:3000",
+        "https://ciname-frontend.onrender.com"
+    ],
+    credentials: true
+}));
 
 app.use(express.json());
 app.use(cookieParser());
