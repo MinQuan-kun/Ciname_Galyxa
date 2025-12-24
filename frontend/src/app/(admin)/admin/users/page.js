@@ -49,7 +49,7 @@ const UsersPage = () => {
     }
   };
 
-  onst handleRequestDelete = (user) => {
+  const handleRequestDelete = (user) => {
     setConfirmModal(user);
   };
 
