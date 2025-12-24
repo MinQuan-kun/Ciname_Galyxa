@@ -54,6 +54,14 @@ const Navbar = () => {
 
           {/* 1. LOGO */}
           <Link href="/" className="flex items-center gap-3 group shrink-0">
+
+            <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.5)] group-hover:border-purple-500 transition-colors duration-300">
+              <img
+                src="/img/Logo.jpg"
+                alt="Ciname Logo"
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+              />
+            </div>
             <div className="flex flex-col leading-none">
               <span className="text-2xl font-extrabold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 filter drop-shadow-lg">
                 CINAME
@@ -75,7 +83,7 @@ const Navbar = () => {
           <div className="flex items-center gap-4 shrink-0">
             {user ? (
               <div className="flex items-center gap-4 animate-in fade-in duration-300">
-                
+
                 {/* Điểm tích lũy */}
                 <div className="hidden md:flex flex-col items-end mr-1">
                   <span className="text-[10px] text-slate-400 uppercase font-bold flex items-center gap-1">
