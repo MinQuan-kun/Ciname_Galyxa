@@ -14,6 +14,7 @@ import userRoutes from './routes/UserRoutes.js';
 import comboRoutes from './routes/ComboRoutes.js';
 import bookingRoutes from './routes/BookingRoutes.js';
 import statsRoutes from './routes/statsRoutes.js';
+import reviewRoutes from './routes/ReviewRoutes.js';
 dotenv.config();
 
 // Khởi tạo app
@@ -45,6 +46,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/combos', comboRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Route mặc định
 app.get('/', (req, res) => {
