@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 // Import kết nối DB
 import { connectDB } from "./config/db.js";
 // Import Routes
-import movieRoutes from './routes/movieRoutes.js';
+import movieRoutes from './routes/MovieRoutes.js';
 import showtimeRoutes from './routes/ShowtimeRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import roomRoutes from './routes/RoomRoutes.js';
