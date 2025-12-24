@@ -75,6 +75,12 @@ const AuthModal = ({ isOpen, onClose, initialTab }) => {
         switchTab('login');
       }
     } catch (err) {
+      console.error("Auth Error:", err);
+      
+      const errorMessage = err.response?.data?.message || "Tài khoản của bạn đã bị khóa!";
+      
+      setError(errorMessage);
+    
     } finally {
       setLoading(false);
     }
