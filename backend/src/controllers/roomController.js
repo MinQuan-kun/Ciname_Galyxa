@@ -22,25 +22,26 @@ export const createRoom = async (req, res) => {
   try {
     const { name, type, totalSeats, seatMap, status } = req.body;
 
-    // Kiểm tra xem tên phòng đã tồn tại chưa
     const existingRoom = await Room.findOne({ name });
     if (existingRoom) {
       return res.status(400).json({ message: 'Tên phòng này đã tồn tại.' });
     }
 
-    // Tạo một instance mới của Room
+    // LOGIC MỚI: Tính totalSeats chuẩn xác (loại bỏ ghế ẩn)
+    let calculatedTotalSeats = totalSeats;
+    if (seatMap && Array.isArray(seatMap)) {
+        calculatedTotalSeats = seatMap.filter(s => s.type !== '_HIDDEN').length;
+    }
+
     const newRoom = new Room({
       name,
       type,
-      totalSeats: seatMap ? seatMap.length : totalSeats, // Tự động tính tổng ghế nếu có seatMap
+      totalSeats: calculatedTotalSeats, // Dùng số đã tính toán
       status,
       seatMap
     });
 
-    // Lưu vào database
     const savedRoom = await newRoom.save();
-
-    // Trả về phòng vừa tạo với mã 201 (Created)
     res.status(201).json(savedRoom);
   } catch (error) {
     res.status(500).json({ message: 'Lỗi khi tạo phòng', error: error.message });
@@ -53,13 +54,11 @@ export const updateRoom = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    // Nếu người dùng cập nhật seatMap, ta nên tính lại totalSeats
-    if (updateData.seatMap) {
-      updateData.totalSeats = updateData.seatMap.length;
+    // LOGIC MỚI: Nếu có update seatMap, tính lại totalSeats chuẩn xác
+    if (updateData.seatMap && Array.isArray(updateData.seatMap)) {
+      updateData.totalSeats = updateData.seatMap.filter(s => s.type !== '_HIDDEN').length;
     }
 
-    // Tìm phòng theo ID và cập nhật
-    // { new: true } để trả về dữ liệu mới sau khi update thay vì dữ liệu cũ
     const updatedRoom = await Room.findByIdAndUpdate(id, updateData, { new: true });
 
     if (!updatedRoom) {

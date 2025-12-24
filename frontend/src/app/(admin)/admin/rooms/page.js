@@ -28,12 +28,18 @@ const RoomsPage = () => {
   const [seatMap, setSeatMap] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
 
-  // --- LOGIC GIỮ NGUYÊN ---
   const syncTokenToCookie = () => {
     const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
     if (token) {
       document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax`;
     }
+  };
+
+  const calculateDimensions = (map) => {
+    if (!map || map.length === 0) return { rows: 10, cols: 12 };
+    const maxCol = Math.max(...map.map(s => s.number));
+    const uniqueRows = new Set(map.map(s => s.row)).size;
+    return { rows: uniqueRows, cols: maxCol };
   };
 
   const fetchRooms = async () => {
@@ -56,11 +62,12 @@ const RoomsPage = () => {
   const handleSelectRoom = (room) => {
     setSelectedRoom(room);
     setIsEditing(true);
+    const dims = calculateDimensions(room.seatMap);
     setFormData({
       name: room.name,
       type: room.type,
-      rows: 10,
-      cols: 12
+      rows: dims.rows, 
+      cols: dims.cols
     });
     setSeatMap(room.seatMap || []);
   };
@@ -79,12 +86,13 @@ const RoomsPage = () => {
     }
     syncTokenToCookie();
 
-    const validSeats = seatMap.filter(s => s.type !== '_HIDDEN');
+    const realSeatsCount = seatMap.filter(s => s.type !== '_HIDDEN').length;
+
     const payload = {
       name: formData.name,
       type: formData.type,
-      seatMap: validSeats,
-      totalSeats: validSeats.length,
+      seatMap: seatMap,
+      totalSeats: realSeatsCount,
       status: 'Active'
     };
 
@@ -100,7 +108,6 @@ const RoomsPage = () => {
         res = await axiosClient.post(url, payload);
       }
 
-      // Axios thành công sẽ không throw error, nên code chạy tiếp ở dưới
       setNotification({
         type: 'success',
         title: 'Thành công!',
@@ -110,15 +117,9 @@ const RoomsPage = () => {
       if (!isEditing) handleCreateNew();
 
     } catch (error) {
-      // Axios ném lỗi vào catch
+      // ... (code xử lý lỗi giữ nguyên)
       const errorMsg = error.response?.data?.message || error.message;
-      if (error.response?.status === 401) {
-        setNotification({ type: 'error', title: 'Lỗi', message: "Hết phiên đăng nhập. Vui lòng đăng nhập lại." });
-      } else if (error.response?.status === 403) {
-        setNotification({ type: 'error', title: 'Lỗi', message: "Bạn không có quyền thực hiện thao tác này." });
-      } else {
-        setNotification({ type: 'error', title: 'Lỗi', message: errorMsg });
-      }
+      setNotification({ type: 'error', title: 'Lỗi', message: errorMsg });
     }
   };
 
@@ -314,7 +315,11 @@ const RoomsPage = () => {
               <div className="flex flex-col gap-1.5 min-w-max pb-4 px-4">
                 {seatMap.length === 0 && <p className="text-gray-600 italic text-xs">Chưa có ghế nào.</p>}
                 {[...new Set(seatMap.map(s => s.row))].map(rowLabel => (
-                  <div key={seat.id} onClick={() => toggleSeatType(seat.id)} className={`w-7 h-7 text-[9px] rounded flex items-center justify-center cursor-pointer font-bold select-none transition-all duration-150 border border-white/5 ${SEAT_TYPES[seat.type]?.color || 'bg-gray-700'} ${seat.type === 'Couple' ? 'w-[62px]' : ''} hover:brightness-125 hover:scale-105 shadow-sm text-white/90`} title={`Ghế ${seat.id} - ${seat.type}`}>{seat.type !== '_HIDDEN' && seat.id}</div>
+                  <div key={rowLabel} className="flex gap-1.5">
+                    {seatMap.filter(s => s.row === rowLabel).map(seat => (
+                      <div key={seat.id} onClick={() => toggleSeatType(seat.id)} className={`w-7 h-7 text-[9px] rounded flex items-center justify-center cursor-pointer font-bold select-none transition-all duration-150 border border-white/5 ${SEAT_TYPES[seat.type]?.color || 'bg-gray-700'} ${seat.type === 'Couple' ? 'w-[62px]' : ''} hover:brightness-125 hover:scale-105 shadow-sm text-white/90`} title={`Ghế ${seat.id} - ${seat.type}`}>{seat.type !== '_HIDDEN' && seat.id}</div>
+                    ))}
+                  </div>
                 ))}
               </div>
             </div>
