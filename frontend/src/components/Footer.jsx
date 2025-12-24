@@ -85,13 +85,14 @@ const Footer = () => {
             
             {/* Social Icons */}
             <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300 hover:-translate-y-1 shadow-lg shadow-blue-900/20 group">
+              <a href="https://www.facebook.com/lkkunnn" className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300 hover:-translate-y-1 shadow-lg shadow-blue-900/20 group">
                 <FaFacebook className="text-lg group-hover:scale-110 transition-transform" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-red-500 hover:to-purple-600 hover:text-white transition-all duration-300 hover:-translate-y-1 shadow-lg shadow-pink-900/20 group">
+              <a href="https://www.instagram.com/kietcvt/)
+" className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-red-500 hover:to-purple-600 hover:text-white transition-all duration-300 hover:-translate-y-1 shadow-lg shadow-pink-900/20 group">
                 <FaInstagram className="text-lg group-hover:scale-110 transition-transform" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-black hover:text-white hover:border hover:border-gray-600 transition-all duration-300 hover:-translate-y-1 shadow-lg group">
+              <a href="https://www.tiktok.com/@cri21105" className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-black hover:text-white hover:border hover:border-gray-600 transition-all duration-300 hover:-translate-y-1 shadow-lg group">
                 <FaTiktok className="text-lg group-hover:scale-110 transition-transform" />
               </a>
             </div>
@@ -102,7 +103,7 @@ const Footer = () => {
       {/* COPYRIGHT */}
       <div className="border-t border-slate-800 mt-16 pt-6 bg-black/20">
         <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500 gap-2">
-          <p>© 2024 Ciname Galyxa. All rights reserved.</p>
+          <p>© 2025 Ciname Galyxa. All rights reserved.</p>
           <div className="flex gap-6">
              <span className="flex items-center gap-1 text-blue-400/80">Winter Edition <FaSnowflake className="animate-pulse"/></span>
              <span>Designed by <span className="text-gray-300 font-bold">MinQuan-kun</span></span>
