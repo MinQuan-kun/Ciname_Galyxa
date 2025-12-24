@@ -68,7 +68,7 @@ const Navbar = () => {
           <div className="hidden md:flex space-x-8 font-bold text-sm uppercase tracking-wide absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
             <Link href="/" className="hover:text-blue-400 transition flex items-center gap-1">Trang chủ</Link>
             <Link href="/schedule" className="hover:text-blue-400 transition">Lịch chiếu</Link>
-            <Link href="/news" className="hover:text-blue-400 transition">Đánh giá</Link>
+            <Link href="/review" className="hover:text-blue-400 transition">Đánh giá</Link>
           </div>
 
           {/* 3. USER SECTION (Bên Phải) */}

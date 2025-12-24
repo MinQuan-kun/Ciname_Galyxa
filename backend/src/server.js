@@ -33,7 +33,7 @@ app.use(
     })
 );
 
-app.use(express.json()); // Để đọc được JSON từ body request
+app.use(express.json());
 app.use(cookieParser());
 
 // Routing (Định tuyến)
@@ -45,6 +45,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/combos', comboRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/stats', statsRoutes);
+
 // Route mặc định
 app.get('/', (req, res) => {
     res.send('API Rạp Chiếu Phim Bất Ổn đang chạy... 🚀');

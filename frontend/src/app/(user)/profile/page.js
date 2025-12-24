@@ -3,7 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import axiosClient from '@/api/axios';
 import { toast } from 'react-toastify';
-import { FaCamera, FaUser, FaHistory, FaStar, FaTicketAlt, FaCalendarAlt, FaSpinner,FaMapMarkerAlt  } from 'react-icons/fa';
+import { 
+  FaCamera, FaUser, FaHistory, FaStar, FaTicketAlt, 
+  FaCalendarAlt, FaSpinner, FaMapMarkerAlt, FaCrown 
+} from 'react-icons/fa';
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
@@ -27,15 +30,18 @@ const ProfilePage = () => {
   const fetchProfile = async () => {
     try {
       const res = await axiosClient.get('/users/profile');
-      setUser(res.data);
+      // Đảm bảo có trường points, nếu API chưa trả về thì mặc định là 0
+      const userData = { ...res.data, points: res.data.points || 0 };
+      
+      setUser(userData);
       setFormData({
-        name: res.data.name,
-        phone: res.data.phone || '',
-        email: res.data.email,
+        name: userData.name,
+        phone: userData.phone || '',
+        email: userData.email,
         password: '',
         confirmPassword: ''
       });
-      setAvatarPreview(res.data.avatar);
+      setAvatarPreview(userData.avatar);
     } catch (error) {
       toast.error('Lỗi tải thông tin cá nhân');
     } finally {
@@ -45,63 +51,89 @@ const ProfilePage = () => {
 
   const fetchBookingHistory = async () => {
     try {
-      // API này cần backend hỗ trợ, nếu chưa có sẽ trả về lỗi 404
       const res = await axiosClient.get('/bookings/my-bookings');
       setBookings(res.data);
     } catch (error) {
-      // Không làm gì nếu lỗi, hoặc log ra console
       console.log('Chưa có lịch sử đặt vé');
     }
   };
 
-  // --- LOGIC UPLOAD ẢNH (HOÀN THIỆN) ---
+  // --- LOGIC TÍNH HẠNG THÀNH VIÊN (MỚI) ---
+  const getMembershipInfo = (points = 0) => {
+      if (points >= 1000) {
+          return { 
+              rank: 'Thành viên Cao Cấp', 
+              color: 'text-yellow-400', 
+              bg: 'bg-yellow-400',
+              border: 'border-yellow-400',
+              nextGoal: 1000, 
+              percent: 100,
+              icon: <FaCrown className="text-yellow-400" />
+          };
+      }
+      if (points >= 500) {
+          return { 
+              rank: 'Khách hàng Thân Thiết', 
+              color: 'text-blue-400', 
+              bg: 'bg-blue-400',
+              border: 'border-blue-400',
+              nextGoal: 1000, 
+              percent: ((points - 500) / 500) * 100, 
+              icon: <FaStar className="text-blue-400" />
+          };
+      }
+      return { 
+          rank: 'Thành viên Mới', 
+          color: 'text-gray-400', 
+          bg: 'bg-gray-400',
+          border: 'border-gray-500',
+          nextGoal: 500, 
+          percent: (points / 500) * 100,
+          icon: <FaUser className="text-gray-400" />
+      };
+  };
+
+  const memberInfo = user ? getMembershipInfo(user.points) : {};
+
+  // --- LOGIC UPLOAD ẢNH ---
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Kiểm tra định dạng và kích thước
     if (!file.type.startsWith('image/')) {
       return toast.error('Vui lòng chọn file ảnh hợp lệ!');
     }
-    if (file.size > 5 * 1024 * 1024) { // 5MB
+    if (file.size > 5 * 1024 * 1024) { 
       return toast.error('Ảnh quá lớn (Tối đa 5MB)');
     }
 
-    // Hiển thị preview ngay lập tức (UI Optimistic)
     const objectUrl = URL.createObjectURL(file);
     setAvatarPreview(objectUrl);
 
-    // Chuẩn bị dữ liệu gửi đi
     const data = new FormData();
     data.append('avatar', file);
-    // Backend yêu cầu các trường khác không được null nếu dùng hàm update chung, 
-    // nhưng nếu backend tách riêng route avatar thì chỉ cần avatar.
-    // Ở đây ta gửi kèm name/phone cũ để đảm bảo không bị lỗi validation (tùy logic backend)
     data.append('name', user.name);
     data.append('phone', user.phone || '');
 
     try {
       setIsUploading(true);
-
       const res = await axiosClient.patch('/users/profile/avatar', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      // Cập nhật lại user mới từ server trả về
-      setUser(res.data);
-      setAvatarPreview(res.data.avatar); // Cập nhật URL thật từ server (Cloudinary)
+      // Giữ nguyên điểm số khi cập nhật avatar
+      const updatedUser = { ...res.data, points: user.points };
+      setUser(updatedUser);
+      setAvatarPreview(updatedUser.avatar);
 
-      // Cập nhật LocalStorage để đồng bộ Header
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-      localStorage.setItem('user', JSON.stringify({ ...currentUser, avatar: res.data.avatar }));
-
-      // Phát sự kiện để Header (nếu có nghe) cập nhật lại avatar
+      localStorage.setItem('user', JSON.stringify({ ...currentUser, avatar: updatedUser.avatar }));
       window.dispatchEvent(new Event('storage'));
 
       toast.success('Đổi ảnh đại diện thành công!');
     } catch (err) {
       toast.error('Lỗi khi tải ảnh lên');
-      setAvatarPreview(user.avatar); // Revert lại ảnh cũ nếu lỗi
+      setAvatarPreview(user.avatar);
     } finally {
       setIsUploading(false);
     }
@@ -127,11 +159,11 @@ const ProfilePage = () => {
       };
 
       const res = await axiosClient.put('/users/profile', payload);
-      setUser(res.data);
+      // Giữ nguyên điểm số khi cập nhật info
+      setUser({ ...res.data, points: user.points }); 
       setIsEditing(false);
       setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
 
-      // Cập nhật localStorage tên mới
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
       localStorage.setItem('user', JSON.stringify({ ...currentUser, name: res.data.name }));
 
@@ -155,9 +187,9 @@ const ProfilePage = () => {
         <div className="lg:col-span-3">
           <div className="bg-[#151f32] rounded-2xl p-6 border border-gray-700 shadow-xl text-center sticky top-28">
 
-            {/* AVATAR UPLOAD SECTION */}
+            {/* AVATAR */}
             <div className="relative w-32 h-32 mx-auto mb-4 group">
-              <div className="w-full h-full rounded-full overflow-hidden border-4 border-gray-700 shadow-lg relative bg-gray-800">
+              <div className={`w-full h-full rounded-full overflow-hidden border-4 ${memberInfo.border || 'border-gray-700'} shadow-lg relative bg-gray-800`}>
                 <img
                   src={
                     avatarPreview ||
@@ -165,39 +197,35 @@ const ProfilePage = () => {
                   }
                   alt={user.name}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  // Xử lý khi ảnh bị lỗi (link hỏng) thì tự động chuyển về ảnh chữ cái
                   onError={(e) => {
-                    e.target.onerror = null; // Tránh lặp vô hạn
+                    e.target.onerror = null;
                     e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=random&color=fff&size=128`;
                   }}
                 />
-
-                {/* Overlay khi upload */}
                 {isUploading && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
                     <FaSpinner className="animate-spin text-orange-500 text-2xl" />
                   </div>
                 )}
-
-                {/* Overlay khi hover để chọn ảnh */}
                 {!isUploading && (
                   <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center cursor-pointer z-10">
                     <div className="flex flex-col items-center text-white">
                       <FaCamera size={24} className="mb-1" />
                       <span className="text-xs font-bold">Đổi ảnh</span>
                     </div>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleAvatarChange}
-                    />
+                    <input type="file" className="hidden" accept="image/*" onChange={handleAvatarChange} />
                   </label>
                 )}
               </div>
             </div>
 
             <h2 className="text-xl font-bold text-white mb-1">{user.name}</h2>
+            
+            {/* RANK BADGE (MỚI) */}
+            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-800/80 border ${memberInfo.border} text-xs font-bold ${memberInfo.color} mb-2`}>
+                {memberInfo.icon} {memberInfo.rank}
+            </div>
+            
             <p className="text-sm text-gray-400 mb-6 truncate">{user.email}</p>
 
             {/* Menu Tabs */}
@@ -206,7 +234,7 @@ const ProfilePage = () => {
                 onClick={() => setActiveTab('info')}
                 className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition font-medium ${activeTab === 'info' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/40' : 'hover:bg-gray-700/50 text-gray-400 hover:text-gray-200'}`}
               >
-                <FaUser /> Thông tin tài khoản
+                <FaUser /> Thông tin & Điểm
               </button>
               <button
                 onClick={() => setActiveTab('history')}
@@ -230,106 +258,155 @@ const ProfilePage = () => {
 
             {/* TAB: THÔNG TIN */}
             {activeTab === 'info' && (
-              <div className="animate-fade-in">
-                <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
-                  <h3 className="text-2xl font-bold text-white">Hồ Sơ Cá Nhân</h3>
-                  {!isEditing && (
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="text-sm bg-blue-600/10 text-blue-400 px-4 py-2 rounded-lg hover:bg-blue-600 hover:text-white transition border border-blue-600/30 font-bold"
-                    >
-                      Chỉnh sửa
-                    </button>
-                  )}
+              <div className="animate-fade-in space-y-8">
+                
+                {/* --- 1. PHẦN THANH TÍCH ĐIỂM (MEMBERSHIP CARD - MỚI) --- */}
+                <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-2xl p-6 relative overflow-hidden shadow-lg">
+                    {/* Background Decor */}
+                    <FaCrown className="absolute -top-6 -right-6 text-gray-700 opacity-20 rotate-12" size={150} />
+                    
+                    <div className="relative z-10">
+                        <div className="flex justify-between items-end mb-4">
+                            <div>
+                                <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Điểm tích lũy</p>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-400">
+                                        {user.points}
+                                    </span>
+                                    <span className="text-gray-500 font-bold">điểm</span>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                {memberInfo.rank !== 'Thành viên Cao Cấp' ? (
+                                    <p className="text-sm text-gray-300">
+                                        Thêm <span className="text-orange-400 font-bold">{memberInfo.nextGoal - user.points}</span> điểm để lên hạng kế tiếp
+                                    </p>
+                                ) : (
+                                    <p className="text-sm text-yellow-400 font-bold">Bạn đã đạt hạng tối đa!</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Progress Bar Container */}
+                        <div className="h-4 w-full bg-black/40 rounded-full p-1 shadow-inner border border-gray-600/30">
+                            {/* Thanh chạy */}
+                            <div 
+                                className={`h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_currentColor] ${memberInfo.bg}`}
+                                style={{ width: `${Math.min(memberInfo.percent, 100)}%` }}
+                            ></div>
+                        </div>
+
+                        {/* Mốc điểm */}
+                        <div className="flex justify-between mt-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                            <span className={user.points >= 0 ? 'text-white' : ''}>Mới (0)</span>
+                            <span className={user.points >= 500 ? 'text-blue-400' : ''}>Thân thiết (500)</span>
+                            <span className={user.points >= 1000 ? 'text-yellow-400' : ''}>Cao cấp (1000)</span>
+                        </div>
+                    </div>
                 </div>
 
-                <form onSubmit={handleUpdateInfo} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-gray-400 text-sm font-medium">Họ và tên</label>
-                    <input
-                      type="text"
-                      value={formData.name || ''}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      disabled={!isEditing}
-                      className="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none disabled:opacity-50 disabled:bg-gray-800 transition text-white"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-gray-400 text-sm font-medium">Số điện thoại</label>
-                    <input
-                      type="text"
-                      value={formData.phone || ''}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      disabled={!isEditing}
-                      className="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none disabled:opacity-50 disabled:bg-gray-800 transition text-white"
-                    />
-                  </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="text-gray-400 text-sm font-medium">Email (Không thể thay đổi)</label>
-                    <input
-                      type="email"
-                      value={formData.email || ''}
-                      disabled
-                      className="w-full bg-gray-900/30 border border-gray-800 rounded-xl px-4 py-3 text-gray-500 cursor-not-allowed font-mono"
-                    />
-                  </div>
-
-                  {/* PHẦN ĐỔI MẬT KHẨU - CHỈ HIỆN KHI EDIT */}
-                  {isEditing && (
-                    <div className="md:col-span-2 bg-gray-900/30 p-4 rounded-xl border border-gray-800 mt-2">
-                      <p className="text-orange-500 text-sm mb-4 font-bold uppercase tracking-wider">🔒 Đổi mật khẩu (Tùy chọn)</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <label className="text-gray-400 text-sm font-medium">Mật khẩu mới</label>
-                          <input
-                            type="password"
-                            placeholder="Nhập mật khẩu mới..."
-                            value={formData.password || ''}
-                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                            className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none transition text-white"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-gray-400 text-sm font-medium">Xác nhận mật khẩu</label>
-                          <input
-                            type="password"
-                            placeholder="Nhập lại mật khẩu..."
-                            value={formData.confirmPassword || ''}
-                            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                            className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none transition text-white"
-                          />
-                        </div>
-                      </div>
+                {/* --- 2. FORM THÔNG TIN CÁ NHÂN --- */}
+                <div>
+                    <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
+                        <h3 className="text-2xl font-bold text-white">Thông Tin Cá Nhân</h3>
+                        {!isEditing && (
+                            <button
+                            onClick={() => setIsEditing(true)}
+                            className="text-sm bg-blue-600/10 text-blue-400 px-4 py-2 rounded-lg hover:bg-blue-600 hover:text-white transition border border-blue-600/30 font-bold"
+                            >
+                            Chỉnh sửa
+                            </button>
+                        )}
                     </div>
-                  )}
 
-                  {isEditing && (
-                    <div className="md:col-span-2 flex justify-end gap-3 mt-4 pt-4 border-t border-gray-700">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsEditing(false);
-                          setFormData({
-                            name: user.name,
-                            phone: user.phone,
-                            email: user.email,
-                            password: '',
-                            confirmPassword: ''
-                          });
-                        }}
-                        className="px-6 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 transition font-bold text-gray-300"
-                      >
-                        Hủy bỏ
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-8 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 font-bold text-white shadow-lg shadow-orange-900/40 transition transform active:scale-95"
-                      >
-                        Lưu thay đổi
-                      </button>
+                    <form onSubmit={handleUpdateInfo} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <label className="text-gray-400 text-sm font-medium">Họ và tên</label>
+                        <input
+                        type="text"
+                        value={formData.name || ''}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        disabled={!isEditing}
+                        className="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none disabled:opacity-50 disabled:bg-gray-800 transition text-white"
+                        />
                     </div>
-                  )}
-                </form>
+                    <div className="space-y-2">
+                        <label className="text-gray-400 text-sm font-medium">Số điện thoại</label>
+                        <input
+                        type="text"
+                        value={formData.phone || ''}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        disabled={!isEditing}
+                        className="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none disabled:opacity-50 disabled:bg-gray-800 transition text-white"
+                        />
+                    </div>
+                    <div className="md:col-span-2 space-y-2">
+                        <label className="text-gray-400 text-sm font-medium">Email (Không thể thay đổi)</label>
+                        <input
+                        type="email"
+                        value={formData.email || ''}
+                        disabled
+                        className="w-full bg-gray-900/30 border border-gray-800 rounded-xl px-4 py-3 text-gray-500 cursor-not-allowed font-mono"
+                        />
+                    </div>
+
+                    {/* PHẦN ĐỔI MẬT KHẨU - CHỈ HIỆN KHI EDIT */}
+                    {isEditing && (
+                        <div className="md:col-span-2 bg-gray-900/30 p-4 rounded-xl border border-gray-800 mt-2">
+                        <p className="text-orange-500 text-sm mb-4 font-bold uppercase tracking-wider">🔒 Đổi mật khẩu (Tùy chọn)</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                            <label className="text-gray-400 text-sm font-medium">Mật khẩu mới</label>
+                            <input
+                                type="password"
+                                placeholder="Nhập mật khẩu mới..."
+                                value={formData.password || ''}
+                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none transition text-white"
+                            />
+                            </div>
+                            <div className="space-y-2">
+                            <label className="text-gray-400 text-sm font-medium">Xác nhận mật khẩu</label>
+                            <input
+                                type="password"
+                                placeholder="Nhập lại mật khẩu..."
+                                value={formData.confirmPassword || ''}
+                                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 focus:border-orange-500 outline-none transition text-white"
+                            />
+                            </div>
+                        </div>
+                        </div>
+                    )}
+
+                    {isEditing && (
+                        <div className="md:col-span-2 flex justify-end gap-3 mt-4 pt-4 border-t border-gray-700">
+                        <button
+                            type="button"
+                            onClick={() => {
+                            setIsEditing(false);
+                            setFormData({
+                                name: user.name,
+                                phone: user.phone,
+                                email: user.email,
+                                password: '',
+                                confirmPassword: ''
+                            });
+                            }}
+                            className="px-6 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 transition font-bold text-gray-300"
+                        >
+                            Hủy bỏ
+                        </button>
+                        <button
+                            type="submit"
+                            className="px-8 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 font-bold text-white shadow-lg shadow-orange-900/40 transition transform active:scale-95"
+                        >
+                            Lưu thay đổi
+                        </button>
+                        </div>
+                    )}
+                    </form>
+                </div>
               </div>
             )}
 
