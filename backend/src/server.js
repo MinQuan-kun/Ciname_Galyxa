@@ -27,7 +27,8 @@ connectDB();
 app.use(cors({
     origin: [
         "http://localhost:3000",
-        "https://ciname-frontend.onrender.com"
+        "https://ciname-galyxa.onrender.com",
+        process.env.FRONTEND_URL
     ],
     credentials: true
 }));
