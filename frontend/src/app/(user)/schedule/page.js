@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import axiosClient from '@/api/axios';
 
@@ -11,7 +11,6 @@ const formatDateLocal = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-// Helper: Tính giờ kết thúc
 const calculateEndTime = (startTime, duration) => {
   const start = new Date(startTime);
   const end = new Date(start.getTime() + duration * 60000); 
@@ -37,10 +36,10 @@ const getNext14Days = () => {
 
 const SchedulePage = () => {
   // --- STATE ---
-  const [dateList] = useState(getNext14Days());
-  const [selectedDate, setSelectedDate] = useState(dateList[0].isoDate); 
+  const [selectedDate, setSelectedDate] = useState(''); 
   const [moviesData, setMoviesData] = useState([]); 
   const [loading, setLoading] = useState(true);
+  const [selectedMovieId, setSelectedMovieId] = useState('ALL');
 
   // --- API CALL ---
   useEffect(() => {
@@ -58,19 +57,53 @@ const SchedulePage = () => {
     fetchSchedule();
   }, []);
 
-  // --- LOGIC FILTER ---
+  // --- 1. LOGIC TÍNH TOÁN NGÀY ---
+  const availableDates = useMemo(() => {
+    const allDays = getNext14Days();
+    if (selectedMovieId === 'ALL') {
+        return allDays;
+    }
+    const selectedGroup = moviesData.find(g => g.movie._id === selectedMovieId);
+    if (!selectedGroup) return [];
+
+    const movieShowDates = new Set(selectedGroup.showtimes.map(show => 
+        formatDateLocal(new Date(show.startTime))
+    ));
+    return allDays.filter(day => movieShowDates.has(day.isoDate));
+  }, [selectedMovieId, moviesData]);
+
+  // --- 2. TỰ ĐỘNG CHỌN NGÀY ---
+  useEffect(() => {
+    const isDateValid = availableDates.some(d => d.isoDate === selectedDate);
+    
+    if (!isDateValid && availableDates.length > 0) {
+        setSelectedDate(availableDates[0].isoDate);
+    } else if (availableDates.length === 0) {
+        setSelectedDate(''); 
+    }
+    if (!selectedDate && availableDates.length > 0) {
+        setSelectedDate(availableDates[0].isoDate);
+    }
+  }, [availableDates, selectedDate]);
+
+  // --- LOGIC FILTER PHIM ---
   const filteredMovies = moviesData.map(group => {
+    if (selectedMovieId !== 'ALL' && group.movie._id !== selectedMovieId) {
+        return null;
+    }
     const showsInDate = group.showtimes.filter(show => {
       const showDateObj = new Date(show.startTime);
       const showDateLocal = formatDateLocal(showDateObj);
       return showDateLocal === selectedDate;
     });
 
+    if (showsInDate.length === 0) return null;
+
     return {
       ...group,
       showtimes: showsInDate.sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
     };
-  }).filter(group => group.showtimes.length > 0);
+  }).filter(Boolean);
 
   const renderDateButton = (day) => (
     <button
@@ -91,25 +124,59 @@ const SchedulePage = () => {
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 pt-6 pb-10 px-4 md:px-10">
 
-      {/* 1. DATE SELECTOR */}
-      <div className="max-w-6xl mx-auto mb-16 space-y-6">
-        <div className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide justify-start md:justify-center">
-          {dateList.slice(0, 7).map(renderDateButton)}
+      <div className="max-w-6xl mx-auto mb-8 space-y-8">
+        
+        {/* 1. DATE SELECTOR (ĐƯA LÊN ĐẦU) */}
+        {availableDates.length === 0 ? (
+            <div className="text-center text-gray-500 italic py-4">
+                Phim này chưa có lịch chiếu trong 2 tuần tới.
+            </div>
+        ) : (
+            <div className="space-y-6">
+                <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide justify-start md:justify-center">
+                    {availableDates.slice(0, 7).map(renderDateButton)}
+                </div>
+                {availableDates.length > 7 && (
+                    <div className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide justify-start md:justify-center">
+                        {availableDates.slice(7, 14).map(renderDateButton)}
+                    </div>
+                )}
+            </div>
+        )}
+
+        {/* 2. FILTER DROPDOWN (NẰM GIỮA - CĂN TRÁI) */}
+        <div className="flex justify-start"> {/* Căn trái để thẳng hàng với phim */}
+            <div className="bg-gray-900 p-3 rounded-xl border border-gray-800 inline-flex flex-col md:flex-row items-center gap-3 shadow-md w-full md:w-auto">
+                <span className="text-orange-400 font-bold whitespace-nowrap text-sm">Lọc phim:</span>
+                <select 
+                    value={selectedMovieId}
+                    onChange={(e) => setSelectedMovieId(e.target.value)}
+                    className="bg-gray-800 text-white border border-gray-700 rounded-lg px-3 py-2 outline-none focus:border-orange-500 cursor-pointer min-w-[250px] text-sm"
+                >
+                    <option value="ALL">-- Tất cả phim --</option>
+                    {moviesData.map(group => (
+                        <option key={group.movie._id} value={group.movie._id}>
+                            {group.movie.title}
+                        </option>
+                    ))}
+                </select>
+            </div>
         </div>
-        <div className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide justify-start md:justify-center">
-           {dateList.slice(7, 14).map(renderDateButton)}
-        </div>
+
       </div>
 
-      {/* 2. MOVIE LIST */}
+      {/* 3. MOVIE LIST (DƯỚI CÙNG) */}
       <div className="max-w-6xl mx-auto space-y-8">
         {loading ? (
           <div className="text-center py-20 text-gray-500">Đang tải lịch chiếu...</div>
         ) : filteredMovies.length === 0 ? (
           <div className="text-center py-20 bg-gray-900/50 rounded-2xl border border-gray-800">
             <span className="text-5xl mb-4 block">🍿</span>
-            <p className="text-xl text-gray-400">Không có suất chiếu nào vào ngày này.</p>
-            <p className="text-sm text-gray-600 mt-2">Vui lòng chọn ngày khác.</p>
+            <p className="text-xl text-gray-400">
+                {selectedMovieId !== 'ALL' 
+                    ? (availableDates.length === 0 ? 'Vui lòng chọn phim khác.' : 'Không có suất chiếu nào vào ngày này.') 
+                    : 'Không có suất chiếu nào vào ngày này.'}
+            </p>
           </div>
         ) : (
           filteredMovies.map((item) => (
@@ -156,7 +223,6 @@ const SchedulePage = () => {
                       const closeBookingTime = new Date(showTimeDate.getTime() - 10 * 60000);
                       const isBookingClosed = now >= closeBookingTime;
 
-                      // === LOGIC NÚT (ĐÃ ĐÓNG) ===
                       if (isBookingClosed) {
                         return (
                           <div
@@ -164,17 +230,12 @@ const SchedulePage = () => {
                             className="relative px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 opacity-50 cursor-not-allowed text-center min-w-[90px] flex flex-col justify-center"
                             title="Đã hết hạn đặt vé (trước 10 phút)"
                           >
-                            {/* Giờ bắt đầu */}
                             <div className="text-lg font-bold text-gray-500 leading-none mb-1">
                               {timeString}
                             </div>
-                            
-                            {/* Loại phòng (GIỮ LẠI) */}
                             <div className="text-[10px] font-bold text-gray-600 uppercase">
                               {show.roomId?.type || '2D'}
                             </div>
-
-                            {/* Giờ kết thúc */}
                             <div className="text-[10px] text-gray-600">
                                ~ {endTimeString}
                             </div>
@@ -182,7 +243,6 @@ const SchedulePage = () => {
                         );
                       }
 
-                      // === LOGIC NÚT (ĐANG MỞ) ===
                       return (
                         <Link
                           key={show._id}
@@ -191,22 +251,18 @@ const SchedulePage = () => {
                         >
                           <div className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 hover:border-orange-500 hover:bg-orange-500 transition-all cursor-pointer text-center min-w-[90px] flex flex-col justify-center">
                             
-                            {/* Giờ bắt đầu */}
                             <div className="text-lg font-bold text-white group-hover/btn:text-white leading-none mb-1">
                               {timeString}
                             </div>
                             
-                            {/* Loại phòng (GIỮ LẠI - Có đổi màu khi hover) */}
                             <div className="text-[10px] font-bold text-gray-400 group-hover/btn:text-orange-100 uppercase">
                               {show.roomId?.type || '2D'}
                             </div>
 
-                            {/* Giờ kết thúc */}
                             <div className="text-[10px] text-gray-500 group-hover/btn:text-orange-200">
                                ~ {endTimeString}
                             </div>
 
-                            {/* Tooltip giá vé */}
                             <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-black text-xs font-bold px-2 py-1 rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
                               {show.ticketPrice.toLocaleString()}đ
                             </div>
