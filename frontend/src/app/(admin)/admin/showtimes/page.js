@@ -4,19 +4,21 @@ import axiosClient from '@/api/axios';
 
 const ShowtimesPage = () => {
   // --- STATE ---
-  const [movies, setMovies] = useState([]);       // Danh sách phim (dropdown)
-  const [rooms, setRooms] = useState([]);         // Danh sách phòng (dropdown)
+  const [movies, setMovies] = useState([]);
+  const [rooms, setRooms] = useState([]);
 
-  // Dữ liệu hiển thị chính: Mảng các nhóm [{ movie: {}, showtimes: [] }]
   const [groupedShowtimes, setGroupedShowtimes] = useState([]);
 
-  const [selectedMovieId, setSelectedMovieId] = useState('ALL'); // Mặc định là ALL
+  const [selectedMovieId, setSelectedMovieId] = useState('ALL');
   const [loading, setLoading] = useState(false);
 
   // State Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentShowtimeId, setCurrentShowtimeId] = useState(null);
+  const [notification, setNotification] = useState(null);
+  const [confirmModal, setConfirmModal] = useState(null);
+
 
   const [formData, setFormData] = useState({
     movieId: '',
@@ -54,14 +56,14 @@ const ShowtimesPage = () => {
 
       if (movieId === 'ALL' || !movieId) {
         const res = await axiosClient.get('/showtimes');
-        data = res.data; 
+        data = res.data;
 
       } else {
         const res = await axiosClient.get(`/showtimes/${movieId}`);
         const flatList = res.data;
-        
+
         const currentMovie = movies.find(m => m._id === movieId);
-        
+
         if (flatList.length > 0 || currentMovie) {
           data = [{
             movie: currentMovie || { title: 'Unknown Movie' },
@@ -117,42 +119,67 @@ const ShowtimesPage = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.movieId || !formData.roomId || !formData.startTime) {
-      alert("Vui lòng điền đầy đủ thông tin!");
+      setNotification({ type: 'warning', title: 'Thiếu thông tin', message: 'Vui lòng điền đầy đủ thông tin!' });
       return;
     }
 
     try {
+      const url = isEditing
+        ? `/showtimes/${currentShowtimeId}`
+        : '/showtimes';
+
       if (isEditing) {
-        await axiosClient.put(`/showtimes/${currentShowtimeId}`, formData);
-        alert("Cập nhật thành công!");
+        await axiosClient.put(url, formData);
       } else {
-        await axiosClient.post('/showtimes', formData);
-        alert("Tạo lịch chiếu thành công!");
+        await axiosClient.post(url, formData);
       }
 
+      setNotification({
+        type: 'success',
+        title: 'Thành công',
+        message: isEditing ? "Cập nhật lịch chiếu thành công!" : "Tạo lịch chiếu mới thành công!"
+      });
       setIsModalOpen(false);
       fetchShowtimes(selectedMovieId);
-      
+
     } catch (error) {
+      // Lấy message lỗi từ Axios response
       const msg = error.response?.data?.message || error.message;
-      alert(`Lỗi: ${msg}`);
+      setNotification({ type: 'error', title: 'Lỗi', message: msg });
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa suất chiếu này?")) return;
-    
+  const handleRequestDelete = (show, movieTitle) => {
+    setConfirmModal({
+      id: show._id,
+      movieTitle: movieTitle,
+      roomName: show.roomId?.name || "Phòng đã xóa",
+      startTime: show.startTime,
+      ticketPrice: show.ticketPrice
+    });
+  };
+
+  // --- THỰC HIỆN XÓA ---
+  const executeDelete = async () => {
+    if (!confirmModal) return;
+
     try {
-      await axiosClient.delete(`/showtimes/${id}`);
-      
-      alert("Đã xóa thành công!");
+      // 5. Thay fetch DELETE bằng axiosClient
+      await axiosClient.delete(`/showtimes/${confirmModal.id}`);
+
+      setNotification({ type: 'success', title: 'Đã xóa', message: 'Đã xóa suất chiếu thành công!' });
       fetchShowtimes(selectedMovieId);
-      
+
     } catch (error) {
       const msg = error.response?.data?.message || error.message;
-      alert("Lỗi khi xóa: " + msg);
+      setNotification({ type: 'error', title: 'Không thể xóa', message: msg });
+    } finally {
+      setConfirmModal(null);
     }
   };
+
+  const closeNotification = () => setNotification(null);
+  const closeConfirmModal = () => setConfirmModal(null);
 
   // --- HELPER ---
   const formatDateTime = (isoString) => {
@@ -169,8 +196,17 @@ const ShowtimesPage = () => {
     return end.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const getPopupStyles = (type) => {
+    switch (type) {
+      case 'success': return { bgHeader: 'bg-green-600', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path> };
+      case 'error': return { bgHeader: 'bg-red-600', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path> };
+      case 'warning': return { bgHeader: 'bg-yellow-600', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path> };
+      default: return { bgHeader: 'bg-blue-600', icon: null };
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-900 p-6 text-gray-100 font-sans">
+    <div className="min-h-screen bg-gray-900 p-6 text-gray-100 font-sans relative">
 
       {/* HEADER */}
       <header className="mb-8 border-b border-gray-700 pb-4 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -206,7 +242,7 @@ const ShowtimesPage = () => {
         </select>
       </div>
 
-      {/* DANH SÁCH SHOWTIMES (RENDER LOOP) */}
+      {/* DANH SÁCH SHOWTIMES */}
       <div className="space-y-8">
         {loading ? (
           <p className="text-center text-gray-400 py-8">Đang tải dữ liệu...</p>
@@ -220,10 +256,8 @@ const ShowtimesPage = () => {
           groupedShowtimes.map((group) => (
             <div key={group.movie._id} className="bg-gray-800 rounded-xl shadow-xl border border-gray-700 overflow-hidden">
 
-              {/* Header của từng phim */}
               <div className="bg-gradient-to-r from-gray-700 to-gray-800 p-4 border-b border-gray-600 flex justify-between items-center">
                 <div className="flex items-center gap-4">
-                  {/* Ảnh Poster nhỏ (nếu có) */}
                   {group.movie.poster && (
                     <img src={group.movie.poster} alt={group.movie.title} className="w-10 h-14 object-cover rounded border border-gray-500" />
                   )}
@@ -232,7 +266,6 @@ const ShowtimesPage = () => {
                     <p className="text-xs text-gray-400">Thời lượng: {group.movie.duration} phút</p>
                   </div>
                 </div>
-                {/* Nút thêm nhanh cho phim này */}
                 <button
                   onClick={() => openModal(null, group.movie._id)}
                   className="text-xs bg-gray-600 hover:bg-gray-500 px-3 py-1 rounded text-white transition"
@@ -240,8 +273,6 @@ const ShowtimesPage = () => {
                   + Thêm lịch cho phim này
                 </button>
               </div>
-
-              {/* Bảng lịch chiếu của phim đó */}
               <div className="overflow-x-auto">
                 {group.showtimes.length === 0 ? (
                   <p className="p-4 text-sm text-gray-500 italic">Chưa có lịch chiếu.</p>
@@ -278,7 +309,7 @@ const ShowtimesPage = () => {
                             </td>
                             <td className="p-3 flex justify-center gap-2">
                               <button onClick={() => openModal({ ...show, movieId: group.movie }, null)} className="text-blue-400 hover:bg-blue-900/30 p-1.5 rounded transition" title="Sửa">✏️</button>
-                              <button onClick={() => handleDelete(show._id)} className="text-red-400 hover:bg-red-900/30 p-1.5 rounded transition" title="Xóa">🗑️</button>
+                              <button onClick={() => handleRequestDelete(show, group.movie.title)} className="text-red-400 hover:bg-red-900/30 p-1.5 rounded transition" title="Xóa">🗑️</button>
                             </td>
                           </tr>
                         );
@@ -292,7 +323,7 @@ const ShowtimesPage = () => {
         )}
       </div>
 
-      {/* MODAL FORM (GIỮ NGUYÊN) */}
+      {/* MODAL FORM*/}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
           <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg border border-gray-600 animate-fadeIn">
@@ -333,6 +364,71 @@ const ShowtimesPage = () => {
           </div>
         </div>
       )}
+      {/* --- MODAL: CẢNH BÁO XÁC NHẬN XÓA--- */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-gray-800 border border-red-500/50 rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all scale-100">
+
+            <div className="bg-red-600/90 p-4 flex items-center gap-3">
+              <div className="bg-white text-red-600 rounded-full p-1">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+              </div>
+              <h3 className="text-white font-bold text-lg">Xác nhận xóa lịch chiếu?</h3>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-gray-300">
+                Bạn có chắc chắn muốn xóa suất chiếu này không?
+              </p>
+
+              <div className="bg-gray-900 border border-gray-700 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-500 text-sm">Phim:</span>
+                  <span className="text-white font-bold text-right w-2/3">{confirmModal.movieTitle}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 text-sm">Phòng:</span>
+                  <span className="text-orange-300 font-bold">{confirmModal.roomName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 text-sm">Thời gian:</span>
+                  <span className="text-green-400 font-mono">
+                    {new Date(confirmModal.startTime).toLocaleString('vi-VN')}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-xs text-red-400 italic text-center">* Hành động này không thể hoàn tác.</p>
+            </div>
+
+            <div className="p-4 border-t border-gray-700 flex justify-end gap-3">
+              <button onClick={closeConfirmModal} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition font-medium">Hủy bỏ</button>
+              <button onClick={executeDelete} className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition font-bold shadow-lg shadow-red-900/50">Xác nhận Xóa</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL: THÔNG BÁO KẾT QUẢ CHUNG --- */}
+      {notification && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-gray-800 border border-gray-600 rounded-xl shadow-2xl max-w-sm w-full overflow-hidden transform transition-all scale-100">
+            <div className={`${getPopupStyles(notification.type).bgHeader} p-4 flex items-center gap-3`}>
+              <div className={`bg-white text-gray-800 rounded-full p-1`}>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">{getPopupStyles(notification.type).icon}</svg>
+              </div>
+              <h3 className="text-white font-bold text-lg">{notification.title}</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-300 text-base">{notification.message}</p>
+            </div>
+            <div className="p-4 border-t border-gray-700 flex justify-end">
+              <button onClick={closeNotification} className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition font-medium">OK</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

@@ -77,20 +77,32 @@ export const deleteRoom = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 1. Tìm và xóa phòng theo ID
-    const deletedRoom = await Room.findByIdAndDelete(id);
-
-    if (!deletedRoom) {
+    // Bước 1: Kiểm tra và lấy thông tin phòng trước khi xóa
+    const room = await Room.findById(id);
+    if (!room) {
       return res.status(404).json({ message: 'Không tìm thấy phòng để xóa' });
     }
 
-    // 2. Xóa TẤT CẢ lịch chiếu liên quan đến phòng này
-    // Dùng deleteMany để xóa hàng loạt các showtime có roomId trùng khớp
-    const deleteResult = await Showtime.deleteMany({ roomId: id });
+    // Bước 2: Tìm các lịch chiếu sắp bị xóa để báo cáo
+    const associatedShowtimes = await Showtime.find({ roomId: id }).populate('movieId', 'title');
+
+    // Bước 3: Xóa phòng
+    await Room.findByIdAndDelete(id);
+
+    // Bước 4: Xóa các lịch chiếu liên quan
+    await Showtime.deleteMany({ roomId: id });
+
+    // Bước 5: Chuẩn bị dữ liệu trả về (Format gọn gàng)
+    const deletedDetails = associatedShowtimes.map(show => ({
+        movieTitle: show.movieId ? show.movieId.title : "Phim không xác định",
+        startTime: show.startTime
+    }));
 
     res.status(200).json({ 
-      message: `Đã xóa phòng và ${deleteResult.deletedCount} lịch chiếu liên quan thành công!`,
-      deletedShowtimes: deleteResult.deletedCount
+      success: true,
+      deletedRoomName: room.name,
+      deletedCount: deletedDetails.length,
+      deletedDetails: deletedDetails
     });
 
   } catch (error) {
