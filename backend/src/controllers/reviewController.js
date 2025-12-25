@@ -37,7 +37,6 @@ export const createReview = async (req, res) => {
     }
 
     // --- TẠM TẮT CHECK ĐIỀU KIỆN XEM PHIM ĐỂ TEST ---
-    /*
     // B. Kiểm tra đã xem phim chưa
     const bookings = await Booking.find({ 
       userId, 
@@ -66,7 +65,6 @@ export const createReview = async (req, res) => {
     if (!canReview) {
       return res.status(403).json({ message: 'Bạn chỉ được đánh giá sau khi đã mua vé và xem hết phim.' });
     }
-    */
     // ----------------------------------------------------
 
     // C. Tạo review
