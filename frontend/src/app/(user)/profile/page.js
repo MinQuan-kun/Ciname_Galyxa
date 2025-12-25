@@ -5,7 +5,7 @@ import axiosClient from '@/api/axios';
 import { toast } from 'react-toastify';
 import { 
   FaCamera, FaUser, FaHistory, FaStar, FaTicketAlt, 
-  FaCalendarAlt, FaSpinner, FaMapMarkerAlt, FaCrown, FaGift, FaCheck, FaTrash 
+  FaCalendarAlt, FaSpinner, FaMapMarkerAlt, FaCrown, FaGift, FaCheck, FaTrash, FaEdit, FaSave, FaTimes
 } from 'react-icons/fa';
 import Link from 'next/link';
 
@@ -30,6 +30,9 @@ const ProfilePage = () => {
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [rewardsTab, setRewardsTab] = useState('available'); // 'available' | 'myVouchers' | 'history'
   const [myReviews, setMyReviews] = useState([]);
+  const [editingReview, setEditingReview] = useState(null);
+  const [editForm, setEditForm] = useState({ rating: 5, comment: '' });
+
   useEffect(() => {
     fetchProfile();
     fetchBookingHistory();
@@ -126,6 +129,34 @@ const ProfilePage = () => {
     }
   };
 
+  const handleStartEdit = (review) => {
+    setEditingReview(review._id);
+    setEditForm({ rating: review.rating, comment: review.comment });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingReview(null);
+    setEditForm({ rating: 5, comment: '' });
+  };
+
+  const handleUpdateReview = async () => {
+    if (!editForm.comment.trim()) return toast.error('Vui lòng nhập nội dung đánh giá');
+    
+    try {
+      const res = await axiosClient.put(`/reviews/${editingReview}`, editForm);
+      toast.success('Cập nhật đánh giá thành công');
+      
+      // Cập nhật lại danh sách local
+      setMyReviews(prev => prev.map(r => 
+        r._id === editingReview ? { ...r, rating: editForm.rating, comment: editForm.comment } : r
+      ));
+      
+      handleCancelEdit();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Lỗi cập nhật đánh giá');
+    }
+  };
+
   const handleRedeemReward = async (voucherId, pointCost) => {
     if (user.points < pointCost) {
       return toast.error(`Bạn cần ${pointCost} điểm để đổi, hiện có ${user.points} điểm`);
@@ -150,7 +181,7 @@ const ProfilePage = () => {
     }
   };
 
-  // --- LOGIC TÍNH HẠNG THÀNH VIÊN (MỚI) ---
+  // --- LOGIC TÍNH HẠNG THÀNH VIÊN  ---
   const getMembershipInfo = (points = 0) => {
       if (points >= 1000) {
           return { 
@@ -563,12 +594,15 @@ const ProfilePage = () => {
                 </div>
                 
                 {myReviews.length === 0 ? (
+                  // ... phần placeholder giữ nguyên ...
                   <div className="text-center py-20 flex flex-col items-center opacity-50">
                     <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mb-6">
                       <FaStar className="text-yellow-500 text-4xl" />
                     </div>
                     <p className="text-gray-400">Bạn chưa viết đánh giá nào.</p>
-                    <Link href="/movies" className="mt-4 text-orange-500 font-bold hover:underline">Xem phim và viết đánh giá ngay!</Link>
+                    <Link href="/movies" className="mt-4 text-orange-500 font-bold hover:underline">
+                      Xem phim và viết đánh giá ngay!
+                    </Link>
                   </div>
                 ) : (
                   <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
@@ -580,37 +614,83 @@ const ProfilePage = () => {
                           <img 
                             src={review.movieId?.poster || '/placeholder.jpg'} 
                             alt={review.movieId?.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
+                            className="w-full h-full object-cover"
                           />
                         </div>
 
                         {/* Nội dung review */}
                         <div className="flex-1">
-                          <div className="flex justify-between items-start">
-                            <h4 className="text-lg font-bold text-white group-hover:text-orange-400 transition mb-1">
-                              {review.movieId?.title || 'Phim không tồn tại'}
-                            </h4>
-                            <button 
-                              onClick={() => handleDeleteReview(review._id)}
-                              className="text-gray-500 hover:text-red-500 p-2 rounded-full hover:bg-red-500/10 transition"
-                              title="Xóa đánh giá"
-                            >
-                              <FaTrash />
-                            </button>
-                          </div>
-
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="flex text-yellow-500 text-sm">
-                              {[...Array(5)].map((_, i) => (
-                                <FaStar key={i} className={i < review.rating ? "text-yellow-400" : "text-gray-700"} />
-                              ))}
+                          
+                          {/* CHECK: NẾU ĐANG SỬA THÌ HIỆN FORM, KHÔNG THÌ HIỆN TEXT */}
+                          {editingReview === review._id ? (
+                            // --- GIAO DIỆN EDIT ---
+                            <div className="animate-fade-in">
+                                <div className="flex justify-between mb-2">
+                                    <h4 className="text-lg font-bold text-white">{review.movieId?.title}</h4>
+                                    <div className="flex gap-2">
+                                        <button onClick={handleUpdateReview} className="p-2 bg-green-600/20 text-green-400 rounded-lg hover:bg-green-600 hover:text-white transition" title="Lưu">
+                                            <FaSave />
+                                        </button>
+                                        <button onClick={handleCancelEdit} className="p-2 bg-gray-700 text-gray-400 rounded-lg hover:bg-gray-600 hover:text-white transition" title="Hủy">
+                                            <FaTimes />
+                                        </button>
+                                    </div>
+                                </div>
+                                {/* Chọn sao */}
+                                <div className="flex gap-1 mb-3">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button key={star} type="button" onClick={() => setEditForm({ ...editForm, rating: star })}>
+                                            <FaStar className={`text-xl transition ${star <= editForm.rating ? 'text-yellow-400' : 'text-gray-600'}`} />
+                                        </button>
+                                    ))}
+                                </div>
+                                {/* Input comment */}
+                                <textarea
+                                    value={editForm.comment}
+                                    onChange={(e) => setEditForm({ ...editForm, comment: e.target.value })}
+                                    className="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white focus:border-orange-500 outline-none text-sm"
+                                    rows="3"
+                                ></textarea>
                             </div>
-                            <span className="text-gray-500 text-xs">• {new Date(review.createdAt).toLocaleDateString('vi-VN')}</span>
-                          </div>
+                          ) : (
+                            // --- GIAO DIỆN XEM ---
+                            <>
+                                <div className="flex justify-between items-start">
+                                    <h4 className="text-lg font-bold text-white group-hover:text-orange-400 transition mb-1">
+                                    {review.movieId?.title || 'Phim không tồn tại'}
+                                    </h4>
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                        <button 
+                                            onClick={() => handleStartEdit(review)}
+                                            className="text-gray-400 hover:text-blue-400 p-2 rounded-full hover:bg-blue-500/10 transition"
+                                            title="Sửa"
+                                        >
+                                            <FaEdit />
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDeleteReview(review._id)}
+                                            className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-500/10 transition"
+                                            title="Xóa"
+                                        >
+                                            <FaTrash />
+                                        </button>
+                                    </div>
+                                </div>
 
-                          <div className="bg-gray-800/50 p-3 rounded-lg">
-                            <p className="text-gray-300 text-sm italic line-clamp-3">"{review.comment}"</p>
-                          </div>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="flex text-yellow-500 text-sm">
+                                    {[...Array(5)].map((_, i) => (
+                                        <FaStar key={i} className={i < review.rating ? "text-yellow-400" : "text-gray-700"} />
+                                    ))}
+                                    </div>
+                                    <span className="text-gray-500 text-xs">• {new Date(review.createdAt).toLocaleDateString('vi-VN')}</span>
+                                </div>
+
+                                <div className="bg-gray-800/50 p-3 rounded-lg">
+                                    <p className="text-gray-300 text-sm italic line-clamp-3">"{review.comment}"</p>
+                                </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     ))}
