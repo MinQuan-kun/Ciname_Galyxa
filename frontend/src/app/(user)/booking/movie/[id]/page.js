@@ -4,7 +4,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import axiosClient from '@/api/axios';
-import { FaCalendarAlt, FaClock, FaPlay, FaUserSecret, FaUsers, FaFilm, FaLanguage, FaExclamationTriangle, FaMapMarkerAlt } from 'react-icons/fa';
+import { 
+    FaCalendarAlt, FaClock, FaPlay, FaUserSecret, FaUsers, 
+    FaFilm, FaLanguage, FaExclamationTriangle, FaMapMarkerAlt, 
+    FaStar, FaPen
+} from 'react-icons/fa';
 import AuthModal from '@/components/AuthModal';
 import { toast } from 'react-toastify';
 
@@ -16,7 +20,12 @@ const MovieBookingPage = () => {
     const [loading, setLoading] = useState(true);
     const router = useRouter(); ///page.js]
     const [showLogin, setShowLogin] = useState(false);
-
+    
+    const [reviews, setReviews] = useState([]);
+    const [isWriting, setIsWriting] = useState(false);
+    const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
     // State mới: Ngày đang chọn
     const [selectedDate, setSelectedDate] = useState('');
     useEffect(() => {
@@ -105,6 +114,67 @@ const MovieBookingPage = () => {
         return Object.values(grouped);
     }, [showtimes, selectedDate]);
 
+    const fetchReviews = async (currentPage = 1) => {
+        try {
+            // Truyền thêm param page
+            const res = await axiosClient.get(`/reviews/movie/${id}?page=${currentPage}`);
+            const { data, pagination } = res.data;
+
+            if (currentPage === 1) {
+                setReviews(data);
+            } else {
+                // Nếu là trang sau thì nối thêm vào danh sách cũ
+                setReviews(prev => [...prev, ...data]);
+            }
+
+            // Kiểm tra xem còn trang sau không
+            setHasMore(currentPage < pagination.totalPages);
+        } catch (error) {
+            console.error("Lỗi tải đánh giá");
+        }
+    };
+
+    // Gọi lần đầu khi vào trang
+    useEffect(() => {
+        if(id) fetchReviews(1);
+    }, [id]);
+
+    // Hàm xử lý khi bấm nút "Xem thêm" (MỚI)
+    const handleLoadMore = () => {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchReviews(nextPage);
+    };
+
+    const handleSubmitReview = async () => {
+        const user = localStorage.getItem('user');
+        if (!user) {
+            setShowLogin(true);
+            return toast.info("Vui lòng đăng nhập để viết đánh giá!");
+        }
+
+        if (!reviewForm.comment.trim()) return toast.warning("Vui lòng nhập nội dung!");
+
+        try {
+            await axiosClient.post('/reviews', {
+                movieId: id,
+                rating: reviewForm.rating,
+                comment: reviewForm.comment
+            });
+            toast.success("Đăng đánh giá thành công!");
+            setIsWriting(false);
+            setReviewForm({ rating: 5, comment: '' });
+
+            // Reset list về trang 1 (MỚI)
+            setPage(1);
+            fetchReviews(1);
+            
+            // Cập nhật lại điểm rating của phim ngay lập tức (UI)
+            setMovie(prev => ({ ...prev, rating: reviewForm.rating })); // Chỉ là update tạm thời để user thấy
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Lỗi khi đăng đánh giá (Bạn cần mua vé trước)");
+        }
+    };
 
     // Helper: Embed Youtube
     const getEmbedUrl = (url) => {
@@ -297,6 +367,105 @@ const MovieBookingPage = () => {
                         <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 text-slate-300 leading-relaxed text-justify">
                             {movie.description || "Đang cập nhật nội dung..."}
                         </div>
+                    </div>
+                </div>
+                    
+                <div className="mt-12 lg:col-span-2">
+                    <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
+                        <div>
+                            <h2 className="text-2xl font-bold text-white border-l-4 border-yellow-500 pl-4">Đánh Giá & Bình Luận</h2>
+                            <div className="flex items-center gap-2 mt-2 ml-5 text-sm">
+                                <span className="text-3xl font-black text-white">{movie.rating || 0}</span>
+                                <div className="text-yellow-500 text-sm flex">
+                                    {[...Array(5)].map((_, i) => (
+                                        <FaStar key={i} className={i < Math.round(movie.rating || 0) ? "text-yellow-500" : "text-slate-700"} />
+                                    ))}
+                                </div>
+                                <span className="text-slate-500">/ 5 điểm ({reviews.length} lượt đánh giá)</span>
+                            </div>
+                        </div>
+                        
+                        {!isWriting && (
+                            <button 
+                                onClick={() => {
+                                    const user = localStorage.getItem('user');
+                                    if(!user) { setShowLogin(true); return toast.info("Đăng nhập để đánh giá"); }
+                                    setIsWriting(true);
+                                }}
+                                className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition border border-slate-700 font-bold text-sm"
+                            >
+                                <FaPen /> Viết đánh giá
+                            </button>
+                        )}
+                    </div>
+
+                    {/* FORM VIẾT ĐÁNH GIÁ */}
+                    {isWriting && (
+                        <div className="bg-slate-900 p-5 rounded-xl border border-slate-700 mb-8 animate-fade-in">
+                            <h3 className="font-bold text-white mb-3">Đánh giá của bạn</h3>
+                            <div className="flex items-center gap-2 mb-4">
+                                <span className="text-slate-400 text-sm">Chất lượng:</span>
+                                <div className="flex gap-1">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button key={star} onClick={() => setReviewForm({...reviewForm, rating: star})}>
+                                            <FaStar className={`text-xl transition ${star <= reviewForm.rating ? 'text-yellow-400 scale-110' : 'text-slate-600'}`} />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <textarea
+                                value={reviewForm.comment}
+                                onChange={(e) => setReviewForm({...reviewForm, comment: e.target.value})}
+                                placeholder="Chia sẻ cảm nghĩ của bạn về bộ phim..."
+                                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none min-h-[100px]"
+                            ></textarea>
+                            <div className="flex justify-end gap-2 mt-3">
+                                <button onClick={() => setIsWriting(false)} className="px-4 py-2 text-slate-400 hover:text-white font-bold text-sm">Hủy</button>
+                                <button onClick={handleSubmitReview} className="px-6 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-bold text-sm shadow-lg">Gửi đánh giá</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* DANH SÁCH REVIEW */}
+                    <div className="space-y-4">
+                        {reviews.length === 0 ? (
+                            <div className="text-center py-10 text-slate-500 italic">Chưa có đánh giá nào. Hãy là người đầu tiên!</div>
+                        ) : (
+                            reviews.map((review) => (
+                                <div key={review._id} className="bg-slate-900/40 border border-slate-800 p-4 rounded-xl flex gap-4">
+                                    <img 
+                                        src={review.userId?.avatar || `https://ui-avatars.com/api/?name=${review.userId?.name}&background=random`} 
+                                        alt="avatar" 
+                                        className="w-10 h-10 rounded-full object-cover border border-slate-700"
+                                    />
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h4 className="font-bold text-white text-sm">{review.userId?.name || 'Người dùng ẩn danh'}</h4>
+                                                <p className="text-[10px] text-slate-500">{new Date(review.createdAt).toLocaleDateString('vi-VN')}</p>
+                                            </div>
+                                            <div className="flex text-yellow-500 text-xs">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <FaStar key={i} className={i < review.rating ? "text-yellow-500" : "text-slate-800"} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <p className="text-slate-300 text-sm mt-2 leading-relaxed">{review.comment}</p>
+                                    </div>
+                                </div>
+                            ))
+                            
+                        )}
+                        {reviews.length > 0 && hasMore && (
+                            <div className="text-center pt-4">
+                                <button 
+                                    onClick={handleLoadMore}
+                                    className="text-slate-400 hover:text-white text-sm font-bold border border-slate-700 hover:border-slate-500 px-4 py-2 rounded-full transition"
+                                >
+                                    Xem các đánh giá cũ hơn
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
 

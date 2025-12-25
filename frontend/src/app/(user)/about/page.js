@@ -6,25 +6,25 @@ const AboutPage = () => {
     {
       name: "Võ Nguyễn Minh Hoàng",
       mssv: "49.01.104.048",
-      role: "Frontend Developer",
-      avatar: "/img/HoangLon.jpg", // Thay bằng đường dẫn ảnh thực tế
+      role: "Fullstack Developer",
+      avatar: "/img/HoangLon.jpg",
     },
     {
       name: "Nguyễn Hữu Minh Quân",
       mssv: "49.01.104.120",
-      role: "Leader / Backend Developer",
+      role: "Fullstack Developer",
       avatar: "/img/MinQuan.jpg",
     },
     {
       name: "Nguyễn Thái Bình",
       mssv: "49.01.104.011",
-      role: "UI/UX Designer",
+      role: "Tester",
       avatar: "/img/TB.jpg",
     },
     {
       name: "Bùi Minh Tín",
       mssv: "49.01.104.152",
-      role: "Database Administrator",
+      role: "Customer Support",
       avatar: "/img/MrTin.jpg",
     },
   ];
@@ -35,7 +35,7 @@ const AboutPage = () => {
         {/* Tiêu đề trang */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-blue-400 uppercase mb-4">
-            Về Chúng Tôi
+            About us
           </h1>
           <div className="h-1 w-24 bg-red-600 mx-auto mb-6"></div>
           <p className="text-gray-400 max-w-2xl mx-auto">
