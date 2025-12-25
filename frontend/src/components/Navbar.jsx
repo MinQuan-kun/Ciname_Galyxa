@@ -26,6 +26,42 @@ const Navbar = () => {
       }
     };
 
+    const loadUserFromStorage = () => {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('user');
+        if (stored) {
+          try {
+            setUser(JSON.parse(stored));
+          } catch (e) { 
+            console.error(e); 
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
+      }
+    };
+
+    const fetchLatestUserData = async () => {
+      if (!localStorage.getItem('user')) return;
+
+      try {
+        const res = await axiosClient.get('/users/profile');
+        if (res.data) {
+          // Gán điểm mặc định là 0 nếu thiếu
+          const freshUser = { ...res.data, points: res.data.points || 0 };
+          
+          setUser(freshUser);
+          localStorage.setItem('user', JSON.stringify(freshUser));
+        }
+      } catch (error) {
+        console.error("Lỗi cập nhật thông tin user trên Navbar:", error);
+      }
+    };
+
+    loadUserFromStorage(); 
+    fetchLatestUserData();
+
     loadUser();
     window.addEventListener('storage', loadUser);
     window.addEventListener('user-update', loadUser);
