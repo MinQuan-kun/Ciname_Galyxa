@@ -8,7 +8,7 @@ const Footer = () => {
     { label: 'Phim Đang Chiếu', href: '/movies' },
     { label: 'Lịch Chiếu Phim', href: '/schedule' },
     { label: 'Đánh giá phim ảnh', href: '/review' }, 
-    { label: 'Về Chúng Tôi', href: '/about' },
+    { label: 'About Us', href: '/about' },
   ];
 
   return (
