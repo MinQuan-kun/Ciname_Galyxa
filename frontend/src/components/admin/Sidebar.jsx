@@ -9,7 +9,8 @@ import {
   FaCalendarAlt,   
   FaCouch,         
   FaHamburger,     
-  FaUserCog,       
+  FaUserCog,
+  FaGift,       
   FaGlobe,         
   FaSignOutAlt,
   FaTimes   
@@ -63,6 +64,11 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       name: 'Người dùng', 
       path: '/admin/users', 
       icon: <FaUserCog /> 
+    },
+    { 
+      name: 'Phần thưởng', 
+      path: '/admin/rewards', 
+      icon: <FaGift /> 
     },
     { 
       name: 'Về trang chủ', 

@@ -6,7 +6,11 @@ import {
   getMyRedemptions,
   getMyActiveVouchers,
   applyVoucher,
-  getAllRedemptions
+  getAllRedemptions,
+  getAllVouchers,
+  createVoucher,
+  updateVoucher,
+  deleteVoucher
 } from '../controllers/rewardController.js';
 
 const router = express.Router();
@@ -22,5 +26,9 @@ router.post('/apply-voucher', verifyToken, applyVoucher);
 
 // Admin routes
 router.get('/all-redemptions', verifyToken, isAdmin, getAllRedemptions);
+router.get('/admin/vouchers', verifyToken, isAdmin, getAllVouchers);
+router.post('/admin/vouchers', verifyToken, isAdmin, createVoucher);
+router.put('/admin/vouchers/:id', verifyToken, isAdmin, updateVoucher);
+router.delete('/admin/vouchers/:id', verifyToken, isAdmin, deleteVoucher);
 
 export default router;

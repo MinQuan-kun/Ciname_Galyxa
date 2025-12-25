@@ -200,3 +200,105 @@ export const getAllRedemptions = async (req, res) => {
     res.status(500).json({ message: 'Lỗi lấy lịch sử đổi điểm', error: error.message });
   }
 };
+
+// ===================== ADMIN CRUD VOUCHERS =====================
+
+// 7. Lấy tất cả vouchers (Admin) - bao gồm cả inactive và hết hạn
+export const getAllVouchers = async (req, res) => {
+  try {
+    const vouchers = await Voucher.find().sort({ createdAt: -1 });
+    res.status(200).json(vouchers);
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi lấy danh sách voucher', error: error.message });
+  }
+};
+
+// 8. Tạo voucher mới (Admin)
+export const createVoucher = async (req, res) => {
+  try {
+    const { 
+      code, name, description, discountType, value, 
+      minOrderValue, pointCost, quantity, startDate, endDate, isActive 
+    } = req.body;
+
+    // Kiểm tra mã code đã tồn tại
+    const existingVoucher = await Voucher.findOne({ code: code.toUpperCase() });
+    if (existingVoucher) {
+      return res.status(400).json({ message: 'Mã voucher đã tồn tại' });
+    }
+
+    const voucher = new Voucher({
+      code: code.toUpperCase(),
+      name,
+      description,
+      discountType: discountType || 'amount',
+      value,
+      minOrderValue: minOrderValue || 0,
+      pointCost,
+      quantity,
+      startDate: startDate || Date.now(),
+      endDate,
+      isActive: isActive !== undefined ? isActive : true
+    });
+
+    await voucher.save();
+    res.status(201).json({ message: 'Tạo voucher thành công', voucher });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi tạo voucher', error: error.message });
+  }
+};
+
+// 9. Cập nhật voucher (Admin)
+export const updateVoucher = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Nếu cập nhật code, kiểm tra xem code mới đã tồn tại chưa
+    if (updateData.code) {
+      updateData.code = updateData.code.toUpperCase();
+      const existingVoucher = await Voucher.findOne({ 
+        code: updateData.code, 
+        _id: { $ne: id } 
+      });
+      if (existingVoucher) {
+        return res.status(400).json({ message: 'Mã voucher đã tồn tại' });
+      }
+    }
+
+    const voucher = await Voucher.findByIdAndUpdate(id, updateData, { new: true });
+    
+    if (!voucher) {
+      return res.status(404).json({ message: 'Không tìm thấy voucher' });
+    }
+
+    res.status(200).json({ message: 'Cập nhật voucher thành công', voucher });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi cập nhật voucher', error: error.message });
+  }
+};
+
+// 10. Xóa voucher (Admin)
+export const deleteVoucher = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Kiểm tra xem voucher đã được đổi bởi user nào chưa
+    const hasRedemptions = await VoucherRedemption.findOne({ voucherId: id });
+    if (hasRedemptions) {
+      return res.status(400).json({ 
+        message: 'Không thể xóa voucher đã có người đổi. Hãy tắt trạng thái hoạt động thay vì xóa.' 
+      });
+    }
+
+    const voucher = await Voucher.findByIdAndDelete(id);
+    
+    if (!voucher) {
+      return res.status(404).json({ message: 'Không tìm thấy voucher' });
+    }
+
+    res.status(200).json({ message: 'Xóa voucher thành công' });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi xóa voucher', error: error.message });
+  }
+};
