@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import Review from './Review.js'; // <--- 1. Import Model Review
 
 const movieSchema = new mongoose.Schema({
   title: { type: String, required: true },
@@ -30,5 +31,19 @@ const movieSchema = new mongoose.Schema({
     default: 'Đang chiếu' 
   }
 }, { timestamps: true });
+
+// --- 2. MIDDLEWARE TỰ ĐỘNG XÓA REVIEW KHI XÓA PHIM ---
+// Hook này chạy SAU KHI một phim bị xóa bằng hàm findByIdAndDelete hoặc findOneAndDelete
+movieSchema.post('findOneAndDelete', async function (doc) {
+  if (doc) {
+    try {
+      // Tìm và xóa tất cả Review có movieId trùng với _id của phim vừa xóa
+      const result = await Review.deleteMany({ movieId: doc._id });
+      console.log(`[CleanUp] Đã xóa phim "${doc.title}" và ${result.deletedCount} đánh giá liên quan.`);
+    } catch (error) {
+      console.error('[CleanUp] Lỗi khi xóa review liên quan:', error);
+    }
+  }
+});
 
 export default mongoose.model('Movie', movieSchema);
