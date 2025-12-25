@@ -5,8 +5,9 @@ import axiosClient from '@/api/axios';
 import { toast } from 'react-toastify';
 import { 
   FaCamera, FaUser, FaHistory, FaStar, FaTicketAlt, 
-  FaCalendarAlt, FaSpinner, FaMapMarkerAlt, FaCrown, FaGift, FaCheck 
+  FaCalendarAlt, FaSpinner, FaMapMarkerAlt, FaCrown, FaGift, FaCheck, FaTrash 
 } from 'react-icons/fa';
+import Link from 'next/link';
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
@@ -28,7 +29,7 @@ const ProfilePage = () => {
   const [redemptions, setRedemptions] = useState([]);
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [rewardsTab, setRewardsTab] = useState('available'); // 'available' | 'myVouchers' | 'history'
-
+  const [myReviews, setMyReviews] = useState([]);
   useEffect(() => {
     fetchProfile();
     fetchBookingHistory();
@@ -72,6 +73,9 @@ const ProfilePage = () => {
       fetchMyVouchers();
       fetchRedemptions();
     }
+    if (activeTab === 'reviews') {
+      fetchMyReviews();
+    }
   }, [activeTab]);
 
   const fetchRewards = async () => {
@@ -98,6 +102,27 @@ const ProfilePage = () => {
       setRedemptions(res.data);
     } catch (error) {
       console.log('Lỗi lấy lịch sử đổi điểm');
+    }
+  };
+
+  const fetchMyReviews = async () => {
+    try {
+      const res = await axiosClient.get('/reviews/my-reviews'); // Đảm bảo bạn đã có API này ở backend
+      setMyReviews(res.data);
+    } catch (error) {
+      console.log('Lỗi tải đánh giá');
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm('Bạn có chắc muốn xóa đánh giá này?')) return;
+    
+    try {
+      await axiosClient.delete(`/reviews/${reviewId}`);
+      toast.success('Đã xóa đánh giá');
+      setMyReviews(prev => prev.filter(r => r._id !== reviewId));
+    } catch (error) {
+      toast.error('Lỗi khi xóa đánh giá');
     }
   };
 
@@ -531,12 +556,66 @@ const ProfilePage = () => {
 
             {/* TAB: ĐÁNH GIÁ (Placeholder) */}
             {activeTab === 'reviews' && (
-              <div className="animate-fade-in text-center py-20 flex flex-col items-center">
-                <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mb-6">
-                  <FaStar className="text-yellow-500 text-4xl" />
+              <div className="animate-fade-in">
+                <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
+                  <h3 className="text-2xl font-bold text-white">Đánh Giá Của Tôi</h3>
+                  <span className="bg-gray-800 text-gray-400 px-3 py-1 rounded-full text-xs font-bold">{myReviews.length} bài viết</span>
                 </div>
-                <h3 className="text-xl font-bold text-white">Tính năng đang phát triển</h3>
-                <p className="text-gray-400 mt-2 max-w-md mx-auto">Danh sách các bài đánh giá phim của bạn sẽ sớm được hiển thị tại đây.</p>
+                
+                {myReviews.length === 0 ? (
+                  <div className="text-center py-20 flex flex-col items-center opacity-50">
+                    <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mb-6">
+                      <FaStar className="text-yellow-500 text-4xl" />
+                    </div>
+                    <p className="text-gray-400">Bạn chưa viết đánh giá nào.</p>
+                    <Link href="/movies" className="mt-4 text-orange-500 font-bold hover:underline">Xem phim và viết đánh giá ngay!</Link>
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                    {myReviews.map((review) => (
+                      <div key={review._id} className="bg-gray-900/50 p-5 rounded-xl border border-gray-700 flex flex-col md:flex-row gap-5 hover:border-orange-500/50 transition relative group">
+                        
+                        {/* Poster phim */}
+                        <div className="w-full md:w-20 h-28 flex-shrink-0 bg-gray-800 rounded-lg overflow-hidden">
+                          <img 
+                            src={review.movieId?.poster || '/placeholder.jpg'} 
+                            alt={review.movieId?.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
+                          />
+                        </div>
+
+                        {/* Nội dung review */}
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <h4 className="text-lg font-bold text-white group-hover:text-orange-400 transition mb-1">
+                              {review.movieId?.title || 'Phim không tồn tại'}
+                            </h4>
+                            <button 
+                              onClick={() => handleDeleteReview(review._id)}
+                              className="text-gray-500 hover:text-red-500 p-2 rounded-full hover:bg-red-500/10 transition"
+                              title="Xóa đánh giá"
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="flex text-yellow-500 text-sm">
+                              {[...Array(5)].map((_, i) => (
+                                <FaStar key={i} className={i < review.rating ? "text-yellow-400" : "text-gray-700"} />
+                              ))}
+                            </div>
+                            <span className="text-gray-500 text-xs">• {new Date(review.createdAt).toLocaleDateString('vi-VN')}</span>
+                          </div>
+
+                          <div className="bg-gray-800/50 p-3 rounded-lg">
+                            <p className="text-gray-300 text-sm italic line-clamp-3">"{review.comment}"</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

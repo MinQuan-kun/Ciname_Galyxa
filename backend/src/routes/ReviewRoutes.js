@@ -5,7 +5,8 @@ import {
   deleteReview, 
   toggleInteraction,
   getTopMoviesWithReviews, 
-  getReviewsByMovie 
+  getReviewsByMovie,
+  getMyReviews
 } from '../controllers/reviewController.js';
 import { verifyToken } from '../middleware/authMiddleware.js'; // Nhớ import middleware auth của bạn
 
@@ -17,6 +18,7 @@ router.get('/movie/:movieId', getReviewsByMovie);   // Lấy danh sách review c
 
 // Protected Routes (Cần đăng nhập)
 router.post('/', verifyToken, createReview);           // Tạo review
+router.get('/my-reviews', verifyToken, getMyReviews); // Lấy danh sách review của user hiện tại
 router.put('/:id', verifyToken, updateReview);         // Sửa review
 router.delete('/:id', verifyToken, deleteReview);      // Xóa review
 router.post('/:id/interact', verifyToken, toggleInteraction); // Like review

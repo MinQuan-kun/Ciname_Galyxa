@@ -206,3 +206,18 @@ export const getReviewsByMovie = async (req, res) => {
     res.status(500).json({ message: 'Lỗi lấy danh sách review', error: error.message });
   }
 };
+
+// 7. Lấy danh sách đánh giá của user hiện tại
+export const getMyReviews = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    // Populate movieId để lấy tên phim và poster
+    const reviews = await Review.find({ userId })
+      .populate('movieId', 'title poster') 
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(reviews);
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi lấy danh sách đánh giá', error: error.message });
+  }
+};
