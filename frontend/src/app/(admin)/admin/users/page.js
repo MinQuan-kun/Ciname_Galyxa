@@ -116,6 +116,7 @@ const UsersPage = () => {
               <tr className="bg-gray-900/50 text-gray-400 text-xs uppercase tracking-wider">
                 <th className="p-4 font-semibold">Họ và tên</th>
                 <th className="p-4 font-semibold">Email & SĐT</th>
+                <th className="p-4 font-semibold text-center">Điểm</th>
                 <th className="p-4 font-semibold text-center">Vai trò</th>
                 <th className="p-4 font-semibold text-center">Trạng thái</th>
                 <th className="p-4 font-semibold text-right">Thao tác</th>
@@ -133,6 +134,20 @@ const UsersPage = () => {
                   <td className="p-4 text-gray-300">
                     <div className="text-sm font-medium">{user.email}</div>
                     <div className="text-xs text-gray-500 mt-1">{user.phone || '---'}</div>
+                  </td>
+
+                  {/* CỘT ĐIỂM */}
+                  <td className="p-4 text-center">
+                    <div className="space-y-1">
+                      <div className="text-sm">
+                        <span className="text-yellow-400 font-bold">{user.points?.toLocaleString() || 0}</span>
+                        <span className="text-gray-500 text-xs ml-1">khả dụng</span>
+                      </div>
+                      <div className="text-xs">
+                        <span className="text-orange-400 font-medium">{user.rankPoints?.toLocaleString() || 0}</span>
+                        <span className="text-gray-500 ml-1">lên hạng</span>
+                      </div>
+                    </div>
                   </td>
 
                   {/* CỘT VAI TRÒ */}
@@ -185,7 +200,7 @@ const UsersPage = () => {
 
               {filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan="5" className="p-8 text-center text-gray-500">
+                  <td colSpan="6" className="p-8 text-center text-gray-500">
                     Không tìm thấy người dùng nào.
                   </td>
                 </tr>

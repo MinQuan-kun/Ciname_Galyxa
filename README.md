@@ -1,1 +1,0 @@
-# Ciname_Galyxa

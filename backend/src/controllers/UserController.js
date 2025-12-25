@@ -1,12 +1,37 @@
 // Thái bình, Bổ sung logic cho các controller lưu ý là không lấy mật khẩu, và 3 hàm get update, delete là dành cho admin
 import User from '../models/User.js';
+import Booking from '../models/Booking.js';
 import { deleteImageFromCloudinary } from '../utils/cloudinaryHelper.js';
 
-// 1. Lấy tất cả user
+// 1. Lấy tất cả user (có tính điểm lên hạng từ Booking)
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select('-password'); // Exclude password
-    res.status(200).json(users);
+    const users = await User.find().select('-password').lean();
+    
+    // Tính điểm lên hạng cho mỗi user từ tổng pointsEarned trong Booking
+    const rankPointsData = await Booking.aggregate([
+      { $match: { status: 'confirmed' } },
+      { 
+        $group: { 
+          _id: '$userId', 
+          rankPoints: { $sum: '$pointsEarned' } 
+        } 
+      }
+    ]);
+    
+    // Tạo map userId -> rankPoints để lookup nhanh
+    const rankPointsMap = {};
+    rankPointsData.forEach(item => {
+      rankPointsMap[item._id.toString()] = item.rankPoints;
+    });
+    
+    // Gán rankPoints cho mỗi user
+    const usersWithRankPoints = users.map(user => ({
+      ...user,
+      rankPoints: rankPointsMap[user._id.toString()] || 0
+    }));
+    
+    res.status(200).json(usersWithRankPoints);
   } catch (error) {
     res.status(500).json({ message: 'Lỗi khi lấy danh sách người dùng', error: error.message });
   }
