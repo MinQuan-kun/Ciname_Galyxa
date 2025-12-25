@@ -25,7 +25,7 @@ const AboutPage = () => {
       name: "Bùi Minh Tín",
       mssv: "49.01.104.152",
       role: "Customer Support",
-      avatar: "/img/MrTin.jpg",
+      avatar: "/img/Tin.jpg",
     },
   ];
 

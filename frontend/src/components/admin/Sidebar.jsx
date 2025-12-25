@@ -56,7 +56,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       icon: <FaCouch /> 
     },
     { 
-      name: 'Dịch vụ & KM', 
+      name: 'Dịch vụ', 
       path: '/admin/combos', 
       icon: <FaHamburger /> 
     },
