@@ -1,9 +1,15 @@
 import Booking from '../models/Booking.js';
 import Showtime from '../models/Showtime.js';
+import User from '../models/User.js';
+import VoucherRedemption from '../models/VoucherRedemption.js';
+
+// Tỉ lệ tích điểm: 10.000đ = 1 điểm
+const POINTS_PER_VND = 10000;
+
 // Tạo đơn
 export const createBooking = async (req, res) => {
   try {
-    const { showtimeId, seats, combos, totalPrice, paymentMethod } = req.body;
+    const { showtimeId, seats, combos, totalPrice, originalPrice, voucherCode, discountAmount, paymentMethod } = req.body;
     const userId = req.user.id;
 
     // 1. Tìm suất chiếu để lấy thông tin giờ chiếu
@@ -40,27 +46,52 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // 3. Tạo đơn
+    // 3. Tính điểm dựa trên giá gốc (originalPrice), nếu không có thì dùng totalPrice
+    const priceForPoints = originalPrice || totalPrice;
+    const pointsEarned = Math.floor(priceForPoints / POINTS_PER_VND);
+
+    // 4. Tạo đơn
     const newBooking = new Booking({
       userId,
       showtimeId,
       seats,
       combos,
       totalPrice,
+      originalPrice: originalPrice || totalPrice,
+      voucherCode: voucherCode || null,
+      discountAmount: discountAmount || 0,
+      pointsEarned,
       paymentMethod: paymentMethod || 'QRCode',
       status: 'confirmed'
     });
 
     await newBooking.save();
 
-    
-    res.status(201).json({ message: "Đặt vé thành công!", booking: newBooking });
+    // 5. Cộng điểm cho user
+    if (pointsEarned > 0) {
+      await User.findByIdAndUpdate(userId, { $inc: { points: pointsEarned } });
+    }
+
+    // 6. Đánh dấu voucher đã sử dụng (nếu có)
+    if (voucherCode) {
+      await VoucherRedemption.findOneAndUpdate(
+        { voucherCode, userId, status: 'active' },
+        { status: 'used', usedAt: new Date() }
+      );
+    }
+
+    res.status(201).json({ 
+      message: "Đặt vé thành công!", 
+      booking: newBooking,
+      pointsEarned 
+    });
 
   } catch (error) {
     console.error("Booking Error:", error);
     res.status(500).json({ message: "Lỗi hệ thống: " + error.message });
   }
 };
+
 
 // Lấy lịch sử đặt vé
 export const getMyBookings = async (req, res) => {

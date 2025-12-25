@@ -41,6 +41,11 @@ const BookingPage = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showUpsellModal, setShowUpsellModal] = useState(false);
 
+  // Voucher state
+  const [voucherCode, setVoucherCode] = useState('');
+  const [voucherInfo, setVoucherInfo] = useState(null);
+  const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
+
   // --- STATE TIMER ---
   const HOLD_TIME = 300;
   const [timeLeft, setTimeLeft] = useState(HOLD_TIME);
@@ -106,7 +111,37 @@ const BookingPage = () => {
     const combo = combos.find(c => c._id === id);
     return t + (combo ? combo.price * q : 0);
   }, 0), [selectedCombos, combos]);
-  const finalTotalPrice = totalSeatPrice + totalComboPrice;
+  
+  // Giá gốc (trước khi giảm)
+  const originalPrice = totalSeatPrice + totalComboPrice;
+  // Giá sau khi áp dụng voucher
+  const discountAmount = voucherInfo?.discountAmount || 0;
+  const finalTotalPrice = originalPrice - discountAmount;
+
+  // Hàm áp dụng voucher
+  const handleApplyVoucher = async () => {
+    if (!voucherCode.trim()) return;
+    
+    try {
+      setIsApplyingVoucher(true);
+      const res = await axiosClient.post('/rewards/apply-voucher', {
+        voucherCode: voucherCode.trim(),
+        orderValue: originalPrice
+      });
+      setVoucherInfo(res.data);
+      toast.success(`Áp dụng thành công! Giảm ${res.data.discountAmount.toLocaleString()}đ`);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Mã voucher không hợp lệ');
+      setVoucherInfo(null);
+    } finally {
+      setIsApplyingVoucher(false);
+    }
+  };
+
+  const handleRemoveVoucher = () => {
+    setVoucherCode('');
+    setVoucherInfo(null);
+  };
 
   // --- HANDLERS ---
   const handleSeatClick = (seat) => {
@@ -156,14 +191,21 @@ const BookingPage = () => {
         return { comboId: id, quantity: qty, name: c?.name, price: c?.price };
       });
 
-      await axiosClient.post('/bookings', {
+      const res = await axiosClient.post('/bookings', {
         showtimeId: id,
         seats: selectedSeats,
         combos: formatCombos,
         totalPrice: finalTotalPrice,
+        originalPrice: originalPrice,
+        voucherCode: voucherInfo?.voucherCode || null,
+        discountAmount: discountAmount,
         paymentMethod: 'Bank'
       });
 
+      // Hiển thị điểm đã nhận
+      if (res.data.pointsEarned > 0) {
+        toast.success(`🎉 Bạn nhận được ${res.data.pointsEarned} điểm thưởng!`);
+      }
       toast.success("Thanh toán thành công! Vé đã được lưu.");
       router.push('/profile');
 
@@ -331,9 +373,67 @@ const BookingPage = () => {
 
           {currentStep === 3 && (
             <div className="max-w-4xl mx-auto px-4 mt-8 animate-in fade-in slide-in-from-right-10">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl text-center">
-                <h2 className="text-2xl font-bold mb-2 text-white">Xác nhận & Thanh toán</h2>
-                <p className="text-slate-400 mb-8">Vui lòng mở app ngân hàng để quét mã QR bên dưới</p>
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl">
+                <h2 className="text-2xl font-bold mb-2 text-white text-center">Xác nhận & Thanh toán</h2>
+                
+                {/* Voucher Section */}
+                <div className="bg-slate-800 rounded-xl p-4 mb-6">
+                  <p className="text-sm text-slate-400 mb-3 font-medium">🎁 Có mã giảm giá?</p>
+                  {!voucherInfo ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={voucherCode}
+                        onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                        placeholder="Nhập mã voucher..."
+                        className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:border-orange-500 outline-none font-mono"
+                      />
+                      <button
+                        onClick={handleApplyVoucher}
+                        disabled={isApplyingVoucher || !voucherCode.trim()}
+                        className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      >
+                        {isApplyingVoucher ? <FaSpinner className="animate-spin" /> : 'Áp dụng'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between bg-green-900/30 border border-green-600 rounded-lg px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <FaCheckCircle className="text-green-400" />
+                        <div>
+                          <p className="text-green-400 font-bold">{voucherInfo.voucherName}</p>
+                          <p className="text-green-300 text-sm">Giảm {voucherInfo.discountAmount.toLocaleString()}đ</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleRemoveVoucher}
+                        className="text-slate-400 hover:text-red-400 transition"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Price Summary */}
+                {voucherInfo && (
+                  <div className="bg-slate-800 rounded-xl p-4 mb-6 space-y-2">
+                    <div className="flex justify-between text-slate-400">
+                      <span>Giá gốc:</span>
+                      <span>{originalPrice.toLocaleString()}đ</span>
+                    </div>
+                    <div className="flex justify-between text-green-400">
+                      <span>Giảm giá:</span>
+                      <span>-{discountAmount.toLocaleString()}đ</span>
+                    </div>
+                    <div className="flex justify-between text-white font-bold text-lg border-t border-slate-700 pt-2">
+                      <span>Thành tiền:</span>
+                      <span className="text-orange-400">{finalTotalPrice.toLocaleString()}đ</span>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-slate-400 mb-8 text-center">Vui lòng mở app ngân hàng để quét mã QR bên dưới</p>
                 <div className="flex justify-center mb-8">
                   <div className="w-80 h-80 md:w-96 md:h-96 bg-white rounded-lg overflow-hidden relative shadow-[0_0_20px_rgba(255,255,255,0.1)]">
                     <img src={getQRCodeUrl()} alt="VietQR Payment" className={`w-full h-full object-contain p-2 transition duration-500 ${isProcessing ? 'blur-sm scale-110' : ''}`} />
