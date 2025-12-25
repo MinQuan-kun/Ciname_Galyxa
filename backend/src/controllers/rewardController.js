@@ -132,37 +132,60 @@ export const getMyActiveVouchers = async (req, res) => {
   }
 };
 
-// 5. Kiểm tra và áp dụng mã voucher khi thanh toán
+// 5. Kiểm tra và áp dụng mã voucher (NÂNG CẤP)
 export const applyVoucher = async (req, res) => {
   try {
     const { voucherCode, orderValue } = req.body;
     const userId = req.user.id;
 
-    // Tìm voucher redemption
-    const redemption = await VoucherRedemption.findOne({ 
+    let voucher = null;
+    let redemption = null;
+
+    // BƯỚC 1: Kiểm tra xem có phải mã đổi từ điểm (VoucherRedemption) không
+    redemption = await VoucherRedemption.findOne({ 
       voucherCode, 
       userId,
       status: 'active'
     }).populate('voucherId');
 
-    if (!redemption) {
-      return res.status(404).json({ message: 'Mã voucher không hợp lệ hoặc đã sử dụng' });
+    if (redemption) {
+      // Nếu là mã đổi điểm
+      if (new Date() > redemption.expiresAt) {
+        await VoucherRedemption.findByIdAndUpdate(redemption._id, { status: 'expired' });
+        return res.status(400).json({ message: 'Mã voucher đổi điểm đã hết hạn' });
+      }
+      voucher = redemption.voucherId;
+    } else {
+      // BƯỚC 2: Nếu không phải mã đổi điểm, tìm trong mã công khai (Voucher)
+      voucher = await Voucher.findOne({ 
+        code: voucherCode.toUpperCase(), 
+        isActive: true 
+      });
+
+      if (!voucher) {
+        return res.status(404).json({ message: 'Mã voucher không hợp lệ hoặc không tồn tại' });
+      }
+
+      // Validate mã công khai
+      if (voucher.quantity <= 0) {
+        return res.status(400).json({ message: 'Voucher này đã hết lượt sử dụng' });
+      }
+      if (new Date() > voucher.endDate) {
+        return res.status(400).json({ message: 'Chương trình khuyến mãi đã kết thúc' });
+      }
+      if (new Date() < voucher.startDate) {
+        return res.status(400).json({ message: 'Chương trình khuyến mãi chưa bắt đầu' });
+      }
     }
 
-    if (new Date() > redemption.expiresAt) {
-      await VoucherRedemption.findByIdAndUpdate(redemption._id, { status: 'expired' });
-      return res.status(400).json({ message: 'Mã voucher đã hết hạn' });
-    }
-
-    const voucher = redemption.voucherId;
-    
+    // BƯỚC 3: Kiểm tra điều kiện giá trị đơn hàng
     if (orderValue < voucher.minOrderValue) {
       return res.status(400).json({ 
-        message: `Đơn hàng tối thiểu ${new Intl.NumberFormat('vi-VN').format(voucher.minOrderValue)}đ` 
+        message: `Đơn hàng tối thiểu ${new Intl.NumberFormat('vi-VN').format(voucher.minOrderValue)}đ để áp dụng` 
       });
     }
 
-    // Tính số tiền được giảm
+    // BƯỚC 4: Tính toán số tiền giảm
     let discountAmount = 0;
     if (voucher.discountType === 'percent') {
       discountAmount = Math.floor(orderValue * voucher.value / 100);
@@ -175,13 +198,14 @@ export const applyVoucher = async (req, res) => {
 
     res.status(200).json({
       valid: true,
-      voucherCode,
+      voucherCode, // Trả về mã để lưu vào booking
       voucherName: voucher.name,
       discountType: voucher.discountType,
       value: voucher.value,
       discountAmount,
       finalPrice: orderValue - discountAmount
     });
+
   } catch (error) {
     res.status(500).json({ message: 'Lỗi áp dụng voucher', error: error.message });
   }

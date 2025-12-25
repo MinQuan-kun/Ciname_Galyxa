@@ -72,12 +72,21 @@ export const createBooking = async (req, res) => {
       await User.findByIdAndUpdate(userId, { $inc: { points: pointsEarned } });
     }
 
-    // 6. Đánh dấu voucher đã sử dụng (nếu có)
+    // 6. Xử lý Voucher sau khi đặt vé thành công
     if (voucherCode) {
-      await VoucherRedemption.findOneAndUpdate(
+      // Thử tìm và cập nhật trong bảng đổi điểm trước (Ưu tiên mã riêng)
+      const redemptionUpdate = await VoucherRedemption.findOneAndUpdate(
         { voucherCode, userId, status: 'active' },
         { status: 'used', usedAt: new Date() }
       );
+
+      // Nếu không phải mã đổi điểm, thì trừ số lượng voucher công khai
+      if (!redemptionUpdate) {
+        await mongoose.model('Voucher').findOneAndUpdate(
+          { code: voucherCode },
+          { $inc: { quantity: -1 } }
+        );
+      }
     }
 
     res.status(201).json({ 
