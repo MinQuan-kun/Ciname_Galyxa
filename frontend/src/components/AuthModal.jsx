@@ -190,19 +190,6 @@ const AuthModal = ({ isOpen, onClose, initialTab }) => {
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-700"></div>
           </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-gray-900 text-gray-500">Hoặc tiếp tục với</span>
-          </div>
-        </div>
-
-        {/* Social Login (Demo UI) */}
-        <div className="grid grid-cols-2 gap-4">
-          <button className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-gray-700 hover:bg-gray-800 transition text-gray-300 text-sm font-medium">
-            <FaGoogle className="text-red-500" /> Google
-          </button>
-          <button className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-gray-700 hover:bg-gray-800 transition text-gray-300 text-sm font-medium">
-            <FaFacebook className="text-blue-500" /> Facebook
-          </button>
         </div>
 
         {/* Switcher Login/Register */}

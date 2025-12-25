@@ -187,7 +187,7 @@ const UsersPage = () => {
                         </button>
                       )}
                       <button
-                        onClick={() => handleRequestDelete(user._id)}
+                        onClick={() => handleRequestDelete(user)}
                         className="p-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white transition"
                         title="Xóa người dùng"
                       >
