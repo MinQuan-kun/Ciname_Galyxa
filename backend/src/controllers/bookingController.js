@@ -2,7 +2,7 @@ import Booking from '../models/Booking.js';
 import Showtime from '../models/Showtime.js';
 import User from '../models/User.js';
 import VoucherRedemption from '../models/VoucherRedemption.js';
-
+import mongoose from 'mongoose';
 // Tỉ lệ tích điểm: 10.000đ = 1 điểm
 const POINTS_PER_VND = 10000;
 
